@@ -6,4 +6,7 @@
 
 * Link to Github repo: https://github.com/kkhawk20/CPSC542/tree/main/Assignment1
 * Link to dataset: https://www.kaggle.com/datasets/alihasnainch/fruits-dataset-for-classification
-* Resources: 
+
+Resources:
+* Dr.Parlett's github repo (392 & 393), https://www.tensorflow.org/tutorials/keras/keras_tuner
+* 
