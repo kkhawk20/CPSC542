@@ -8,5 +8,6 @@
 * Link to dataset: https://www.kaggle.com/datasets/alihasnainch/fruits-dataset-for-classification
 
 Resources:
-* Dr.Parlett's github repo (392 & 393), https://www.tensorflow.org/tutorials/keras/keras_tuner
+* Dr.Parlett's github repo (392 & 393)
+* https://www.tensorflow.org/tutorials/keras/keras_tuner
 * 
