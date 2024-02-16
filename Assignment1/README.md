@@ -11,5 +11,6 @@ Resources:
 * Dr.Parlett's github repo (392 & 393)
 * https://www.tensorflow.org/tutorials/keras/keras_tuner
 * https://keras.io/api/applications/vgg/
+* https://www.geeksforgeeks.org/vgg-16-cnn-model/
 * Caitlyn's Office Hours
 * 
