@@ -7,7 +7,7 @@
 * Link to Github repo: https://github.com/kkhawk20/CPSC542/tree/main/Assignment1
 * Link to dataset: https://www.kaggle.com/datasets/alihasnainch/fruits-dataset-for-classification
 
-Resources:
+Resources + ones I used to learn about things:
 * Dr.Parlett's github repo (392 & 393)
 * https://www.tensorflow.org/tutorials/keras/keras_tuner
 * https://keras.io/api/applications/vgg/
@@ -16,6 +16,7 @@ Resources:
 * https://medium.com/@mygreatlearning/everything-you-need-to-know-about-vgg16-7315defb5918
 * https://towardsdatascience.com/loss-functions-and-their-use-in-neural-networks-a470e703f1e9
 * https://towardsdatascience.com/optimizers-for-training-neural-network-59450d71caf6
+* https://datagen.tech/guides/computer-vision/vgg16/#
 
 ChatGPT Prompt Uses:
 * "Help me brainstorm visualizations for a CNN deep learning model. If possible, give me some basic code to create them" - this was utilized to figure out how to graph some visualizations utilizing code and understand them
