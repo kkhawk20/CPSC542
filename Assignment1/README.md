@@ -14,3 +14,6 @@ Resources:
 * https://www.geeksforgeeks.org/vgg-16-cnn-model/
 * Caitlyn's Office Hours
 * https://medium.com/@mygreatlearning/everything-you-need-to-know-about-vgg16-7315defb5918
+
+ChatGPT Prompt Uses:
+* "Help me brainstorm visualizations for a CNN deep learning model. If possible, give me some basic code to create them" - this was utilized to figure out how to graph some visualizations utilizing code and understand them
