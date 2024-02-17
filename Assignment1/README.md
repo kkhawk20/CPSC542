@@ -13,4 +13,4 @@ Resources:
 * https://keras.io/api/applications/vgg/
 * https://www.geeksforgeeks.org/vgg-16-cnn-model/
 * Caitlyn's Office Hours
-* 
+* https://medium.com/@mygreatlearning/everything-you-need-to-know-about-vgg16-7315defb5918
