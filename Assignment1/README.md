@@ -17,6 +17,7 @@ Resources + ones I used to learn about things:
 * https://towardsdatascience.com/loss-functions-and-their-use-in-neural-networks-a470e703f1e9
 * https://towardsdatascience.com/optimizers-for-training-neural-network-59450d71caf6
 * https://datagen.tech/guides/computer-vision/vgg16/#
+* https://builtin.com/machine-learning/vgg16
 
 ChatGPT Prompt Uses:
 * "Help me brainstorm visualizations for a CNN deep learning model. If possible, give me some basic code to create them" - this was utilized to figure out how to graph some visualizations utilizing code and understand them
