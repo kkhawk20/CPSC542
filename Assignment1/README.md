@@ -19,6 +19,8 @@ Resources + ones I used to learn about things:
 * https://datagen.tech/guides/computer-vision/vgg16/#
 * https://builtin.com/machine-learning/vgg16
 * https://keras.io/api/layers/pooling_layers/global_average_pooling2d/
+* https://keras.io/api/callbacks/model_checkpoint/
+* https://keras.io/api/callbacks/early_stopping/
 
 ChatGPT Prompt Uses:
 * "Help me brainstorm visualizations for a CNN deep learning model. If possible, give me some basic code to create them" - this was utilized to figure out how to graph some visualizations utilizing code and understand them
