@@ -1,4 +1,4 @@
-# Assignment 1 - Reading + Code + Writeup
+# Assignment 1
 
 # Name : Kelsey Hawkins
 * Email : kehawkins@chapman.eduu
