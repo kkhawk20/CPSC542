@@ -22,6 +22,7 @@ Resources + ones I used to learn about things:
 * https://keras.io/api/callbacks/model_checkpoint/
 * https://keras.io/api/callbacks/early_stopping/
 * https://www.tensorflow.org/api_docs/python/tf/keras/preprocessing/image/ImageDataGenerator
+* https://keras.io/examples/vision/grad_cam/
 
 ChatGPT Prompt Uses:
 * "Help me brainstorm visualizations for a CNN deep learning model. I need to assess my models performance" - this was utilized to figure out how to graph some visualizations utilizing code and understand them
