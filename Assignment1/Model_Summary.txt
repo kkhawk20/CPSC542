@@ -1,0 +1,24 @@
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ vgg16 (Functional)          (None, 9, 9, 512)         14714688  
+                                                                 
+ global_average_pooling2d (G  (None, 512)              0         
+ lobalAveragePooling2D)                                          
+                                                                 
+ dense (Dense)               (None, 1024)              525312    
+                                                                 
+ dense_1 (Dense)             (None, 2)                 2050      
+                                                                 
+=================================================================
+Total params: 15,242,050
+Trainable params: 15,242,050
+Non-trainable params: 0
+_________________________________________________________________
+Tuner found the best activation function: sigmoid
+Tuner found the best learning rate: 0.01
+Best Model Test accuracy: 95.99%
+Best Model Test val_accuracy: 96.41%
+Best Model Test loss: 10.21%
+Best Model Test val_loss: 11.91%
