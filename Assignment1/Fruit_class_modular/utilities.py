@@ -116,4 +116,4 @@ def model_eval(hist):
         grid_image.paste(img, (x, y))
 
     # Save the grid image
-    grid_image.save('test_predictions_grid.jpg')
+    grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
