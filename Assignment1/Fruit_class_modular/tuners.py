@@ -63,14 +63,15 @@ def train_model(data):
 
     best_hp = tuner.get_best_hyperparameters(num_trials = 1)[0]
 
-    print("Tuner found the best activation function:", best_hp.get('dense_activation'))
-    print("Tuner found the best learning rate:", best_hp.get('lr'))
+    # print("Tuner found the best activation function:", best_hp.get('dense_activation'))
+    # print("Tuner found the best learning rate:", best_hp.get('lr'))
 
     # Correctly get the best model and evaluate it
     best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
 
     # Utilizing checkpoint for saving model and early stopping to minmize loss 
-    checkpoint = ModelCheckpoint("vgg16_KH.h5", monitor='accuracy', 
+    checkpoint = ModelCheckpoint(filepath = os.path.join(save_dir, "vgg16_KH.h5"), 
+                                monitor='accuracy', 
                                 verbose=2, save_best_only=True, 
                                 save_weights_only=False, mode='auto', 
                                 save_freq='epoch')

@@ -58,21 +58,6 @@ def model_eval(hist):
     plt.savefig(os.path.join(save_dir, 'Accuracy_Loss2.jpg'))
     plt.close()
 
-
-
-    # Testing it out with an image from the internet for fun
-    img = load_img("/app/rundir/Fruit_Classification/TEST_PEACH.jpeg",target_size=(300,300))
-    img = np.asarray(img)
-    img = np.expand_dims(img, axis=0)
-
-    saved_model = load_model("vgg16_KH.h5")
-    output = saved_model.predict(img)
-    if output[0][0] > output[0][1]:
-        print("Fresh")
-    else:
-        print('Rotten')
-
-
     # Testing with 5 images from the testing set
     saved_model = load_model('vgg16_KH.h5')
 
