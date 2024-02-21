@@ -4,6 +4,8 @@
 * Email : kehawkins@chapman.eduu
 * Student ID : 2364453
 
+# TO RUN THE CODE: python3 -m Fruit_class_modular
+
 * Link to Github repo: https://github.com/kkhawk20/CPSC542/tree/main/Assignment1
 * Link to dataset: https://www.kaggle.com/datasets/alihasnainch/fruits-dataset-for-classification
 
