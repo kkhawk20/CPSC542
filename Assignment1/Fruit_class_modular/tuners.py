@@ -53,18 +53,15 @@ def train_model(data):
                             objective = 'val_accuracy', 
                             max_trials = 10,
                             overwrite = True, # Needed to overwrite previous saves due to issues
-                            directory = '/nfshome/kehawkins/test_rundir/Fruit_Classification/', 
+                            directory = save_dir, 
                             project_name = 'Assignment1',
                             )
 
-    tuner.search(train_ds, epochs = 25, 
+    tuner.search(train_ds, epochs = 50, 
                 validation_data = val_ds, 
                 verbose = 2)
 
     best_hp = tuner.get_best_hyperparameters(num_trials = 1)[0]
-
-    # print("Tuner found the best activation function:", best_hp.get('dense_activation'))
-    # print("Tuner found the best learning rate:", best_hp.get('lr'))
 
     # Correctly get the best model and evaluate it
     best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
@@ -86,7 +83,6 @@ def train_model(data):
     # Define a custom print function that writes to the file
     # Utilizing this for further reading of the ouptut, documentation into the model_summary
     output_file_path = os.path.join(save_dir, 'model_summary.txt')
-
     with open(output_file_path, 'w') as f:
         def print_to_file(text):
             print(text, file=f)
