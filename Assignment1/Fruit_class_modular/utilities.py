@@ -38,30 +38,25 @@ def model_eval(hist):
     plt.savefig(os.path.join(save_dir, 'Accuracy_Loss1.jpg'))
     plt.close()
 
-    # Plotting v2 to see if its better
-    plt.figure(figsize=(10, 5))  # You can adjust the size to fit your needs
+    # Plotting v2 to see deeper analysis...
+    plt.figure(figsize=(10, 5))
 
     # Plot with different line styles and markers
     plt.plot(hist.history['accuracy'], 'b-o', label="Accuracy", linewidth=2, markersize=5)
     plt.plot(hist.history['val_accuracy'], 'r-s', label="Validation Accuracy", linewidth=2, markersize=5)
     plt.plot(hist.history['loss'], 'g--d', label="Loss", linewidth=2, markersize=5)
     plt.plot(hist.history['val_loss'], 'k-.*', label="Validation Loss", linewidth=2, markersize=5)
-
     plt.title("Model Accuracy and Loss (Test vs Val)")
     plt.ylabel("Value")
     plt.xlabel("Epoch")
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))  # Moves the legend outside of the plot
-
-    # Ensure the plot is saved without cutting off the legend
     plt.tight_layout(rect=[0, 0, 0.75, 1])
-
     plt.savefig(os.path.join(save_dir, 'Accuracy_Loss2.jpg'))
     plt.close()
 
-    # Testing with 5 images from the testing set
-    saved_model = load_model('vgg16_KH.h5')
+    # Testing with 5 images from the testing set... using saved model
+    saved_model = load_model(os.path.join(save_dir, 'vgg16_KH.h5'))
 
-    # Assuming 'test_dir' is the main directory containing the subclass directories
     subclasses = [d for d in os.listdir(test_dir) if os.path.isdir(os.path.join(test_dir, d))]
     selected_images = []
 
@@ -79,7 +74,6 @@ def model_eval(hist):
             # Randomly pick an image from the subclass
             filename = random.choice(subclass_images)
             selected_images.append(os.path.join(subclass, filename))  # Save the relative path from test_dir
-
 
     grid_size = (2,3)
     grid_image = Image.new('RGB', (grid_size[0] * image_size[0], grid_size[1] * image_size[1]), (255, 255, 255))
@@ -115,5 +109,14 @@ def model_eval(hist):
         # Paste the image onto the grid canvas
         grid_image.paste(img, (x, y))
 
-    # Save the grid image
+    # Save the grid image! s
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
+
+
+# Done!
+
+
+# Gradcam??
+
+# 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
+
