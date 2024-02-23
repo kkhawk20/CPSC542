@@ -20,6 +20,8 @@ def model_eval(hist):
     image_size = (300,300)
     last_conv_layer_name = 'block5_conv3'
 
+    # Create a model that outputs the last convolutional layer's output and the original model's output
+    
     if not os.path.exists(save_dir):
         print("Unable to save output images/files")
 
@@ -55,8 +57,6 @@ def model_eval(hist):
     plt.tight_layout(rect=[0, 0, 0.75, 1])
     plt.savefig(os.path.join(save_dir, 'Accuracy_Loss2.jpg'))
     plt.close()
-
-
 
     # Testing with 5 images from the testing set... using saved model
     saved_model = load_model(os.path.join(save_dir, 'vgg16_KH.h5'))
@@ -118,21 +118,20 @@ def model_eval(hist):
     # Save the grid image! s
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
 
-
-# Done!
-
-
-# Gradcam??
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import Model
 
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index):
-    # Create a model with direct access to the outputs of our last conv layer
-    grad_model = Model(inputs=[model.inputs], outputs=[model.get_layer(last_conv_layer_name).output, model.output])
+    # First, ensure that 'vgg16' is indeed the correct name of the VGG16 submodel within your main model
+    vgg16_submodel = model.get_layer('vgg16')
 
+    # Now create a model that connects the input of the main model to the outputs you are interested in
+    grad_model = Model(inputs=model.inputs,
+                    outputs=[vgg16_submodel.get_layer('block5_conv3').output,
+                                model.output])
+                                
     # Record operations for automatic differentiation
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
