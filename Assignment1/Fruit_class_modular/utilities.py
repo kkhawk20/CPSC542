@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.preprocessing.image import load_img
 from keras.models import load_model
+import cv2
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -92,8 +93,8 @@ def model_eval(hist):
         # Make predictions
         output = saved_model.predict(img_array)
         prediction = "Fresh" if output[0][0] > output[0][1] else "Rotten"
-
-        gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name, prediction)
+        predicted_class_index = np.argmax(output, axis=1)[0]
+        gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name, predicted_class_index)
 
         # Overlay the prediction on the image
         img = img.convert("RGB")
