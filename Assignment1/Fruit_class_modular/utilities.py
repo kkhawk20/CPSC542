@@ -17,6 +17,7 @@ def model_eval(hist):
     data_dir = os.path.join(base_dir, 'Data')
     test_dir = os.path.join(data_dir, 'Test')
     image_size = (300,300)
+    last_conv_layer_name = 'block5_conv3'
 
     if not os.path.exists(save_dir):
         print("Unable to save output images/files")
@@ -118,4 +119,76 @@ def model_eval(hist):
 
 # Gradcam??
 
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.models import Model
 
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index):
+    # Create a model with direct access to the outputs of our last conv layer
+    grad_model = Model(inputs=[model.inputs], outputs=[model.get_layer(last_conv_layer_name).output, model.output])
+
+    # Record operations for automatic differentiation
+    with tf.GradientTape() as tape:
+        conv_outputs, predictions = grad_model(img_array)
+        loss = predictions[:, pred_index]
+
+    # Get gradients of loss wrt the conv outputs
+    grads = tape.gradient(loss, conv_outputs)
+
+    # Each entry is the mean intensity of the gradient over a specific feature map channel
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+    # Weigh the output feature map channels by the importance to the prediction
+    conv_outputs = conv_outputs[0]
+    heatmap = tf.matmul(conv_outputs, pooled_grads[..., tf.newaxis])
+    heatmap = tf.squeeze(heatmap)
+
+    # For visualization, normalize the heatmap
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
+
+def apply_gradcam(img_path, model, last_conv_layer_name, image_size):
+    img = load_img(img_path, target_size=image_size)
+    img_array = img_to_array(img)  # Convert img to numpy array
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+
+    # Make prediction
+    preds = model.predict(img_array)
+    pred_index = np.argmax(preds[0])
+
+    # Generate Grad-CAM heatmap
+    heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index)
+
+    # Use cv2 to overlay the heatmap on original image
+    import cv2
+    img_original = cv2.imread(img_path)
+    img_original = cv2.resize(img_original, (image_size[0], image_size[1]))
+    heatmap = np.uint8(255 * heatmap)  # Scale heatmap to a range 0-255
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)  # Apply heatmap coloring
+    superimposed_img = heatmap * 0.4 + img_original  # Superimpose the heatmap on original image
+    superimposed_img = cv2.cvtColor(superimposed_img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+
+    # Convert back to PIL image and return
+    return Image.fromarray(superimposed_img.astype('uint8'), 'RGB')
+
+# Modify the loop where you process each selected image
+for index, filename in enumerate(selected_images):
+    img_path = os.path.join(test_dir, filename)
+    
+    # Instead of directly converting to RGB and drawing predictions,
+    # first apply Grad-CAM to get an image with the heatmap overlay
+    gradcam_img, preds = apply_gradcam(img_path, saved_model, last_conv_layer_name, image_size)
+    
+    # Now, you can draw the prediction text over this gradcam_img
+    # Similar to your existing code, but replace 'img' with 'gradcam_img'
+    draw = ImageDraw.Draw(gradcam_img)
+    # ... continue with drawing text as before ...
+
+    # Calculate the position of the image in the grid and paste
+    x = index % grid_size[0] * image_size[0]
+    y = index // grid_size[0] * image_size[1]
+    grid_image.paste(gradcam_img, (x, y))
+
+# Save the grid image
+grid_image.save(os.path.join(save_dir, 'test_predictions_grid_with_gradcam.jpg'))
