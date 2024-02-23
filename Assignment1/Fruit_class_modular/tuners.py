@@ -59,7 +59,7 @@ def train_model(data):
 
     tuner.search(train_ds, epochs = 50, 
                 validation_data = val_ds, 
-                verbose = 0)
+                verbose = 1)
 
     best_hp = tuner.get_best_hyperparameters(num_trials = 1)[0]
 
@@ -73,7 +73,7 @@ def train_model(data):
                                 save_weights_only=False, mode='auto', 
                                 save_freq='epoch')
     early = EarlyStopping(monitor='accuracy', patience=10, 
-                        verbose=0, mode='auto')
+                        verbose=1, mode='auto')
 
     # Fitting the best model found given the checkpoint and early stopping callbacks
     hist = best_model.fit(train_ds, validation_data=val_ds, 
