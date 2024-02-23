@@ -93,7 +93,7 @@ def model_eval(hist):
         output = saved_model.predict(img_array)
         prediction = "Fresh" if output[0][0] > output[0][1] else "Rotten"
 
-        gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name, pred_class)
+        gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name, prediction)
 
         # Overlay the prediction on the image
         img = img.convert("RGB")
