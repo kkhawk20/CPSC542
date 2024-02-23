@@ -55,6 +55,8 @@ def model_eval(hist):
     plt.savefig(os.path.join(save_dir, 'Accuracy_Loss2.jpg'))
     plt.close()
 
+
+
     # Testing with 5 images from the testing set... using saved model
     saved_model = load_model(os.path.join(save_dir, 'vgg16_KH.h5'))
 
@@ -91,9 +93,11 @@ def model_eval(hist):
         output = saved_model.predict(img_array)
         prediction = "Fresh" if output[0][0] > output[0][1] else "Rotten"
 
+        gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name, pred_class)
+
         # Overlay the prediction on the image
         img = img.convert("RGB")
-        draw = ImageDraw.Draw(img)
+        draw = ImageDraw.Draw(gradcam_img)
         text_color = (255, 255, 255)  # White text color
         text_background = (0, 0, 0)  # Black background for text
         margin = 10
@@ -148,47 +152,20 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index):
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
 
-def apply_gradcam(img_path, model, last_conv_layer_name, image_size):
-    img = load_img(img_path, target_size=image_size)
-    img_array = img_to_array(img)  # Convert img to numpy array
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
-
-    # Make prediction
-    preds = model.predict(img_array)
-    pred_index = np.argmax(preds[0])
-
-    # Generate Grad-CAM heatmap
+def apply_gradcam(img_array, model, last_conv_layer_name, pred_index):
+    # Generate the Grad-CAM heatmap
     heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index)
-
-    # Use cv2 to overlay the heatmap on original image
-    import cv2
-    img_original = cv2.imread(img_path)
-    img_original = cv2.resize(img_original, (image_size[0], image_size[1]))
-    heatmap = np.uint8(255 * heatmap)  # Scale heatmap to a range 0-255
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)  # Apply heatmap coloring
-    superimposed_img = heatmap * 0.4 + img_original  # Superimpose the heatmap on original image
-    superimposed_img = cv2.cvtColor(superimposed_img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-
-    # Convert back to PIL image and return
-    return Image.fromarray(superimposed_img.astype('uint8'), 'RGB')
-
-# Modify the loop where you process each selected image
-for index, filename in enumerate(selected_images):
-    img_path = os.path.join(test_dir, filename)
     
-    # Instead of directly converting to RGB and drawing predictions,
-    # first apply Grad-CAM to get an image with the heatmap overlay
-    gradcam_img, preds = apply_gradcam(img_path, saved_model, last_conv_layer_name, image_size)
+    # Rescale heatmap to a range 0-255
+    heatmap = np.uint8(255 * heatmap)
     
-    # Now, you can draw the prediction text over this gradcam_img
-    # Similar to your existing code, but replace 'img' with 'gradcam_img'
-    draw = ImageDraw.Draw(gradcam_img)
-    # ... continue with drawing text as before ...
+    # Use cv2 to apply the heatmap to the original image
+    img_original = np.array(img)  # Convert PIL image to numpy array (ensure 'img' is your PIL image before resizing)
+    heatmap = cv2.resize(heatmap, (img_original.shape[1], img_original.shape[0]))
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    superimposed_img = heatmap * 0.4 + img_original
+    superimposed_img = np.uint8(superimposed_img)
+    
+    # Convert back to PIL image to keep the rest of your processing consistent
+    return Image.fromarray(superimposed_img)
 
-    # Calculate the position of the image in the grid and paste
-    x = index % grid_size[0] * image_size[0]
-    y = index // grid_size[0] * image_size[1]
-    grid_image.paste(gradcam_img, (x, y))
-
-# Save the grid image
-grid_image.save(os.path.join(save_dir, 'test_predictions_grid_with_gradcam.jpg'))
