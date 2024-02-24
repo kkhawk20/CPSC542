@@ -17,21 +17,23 @@ def train_model(data):
         # weights set to pre-trained from imagenet
         # Input size is the 300x300x3 for color image
         base = VGG16(include_top = False, weights = 'imagenet', 
-                    input_shape = (300, 300, 3))
+                    input_shape = (300, 300, 3),
+                    name = 'vgg16_base')
         
         # Beginning the model with the VGG16 and flatten layer
-        model = Sequential([base, GlobalAveragePooling2D()]) 
+        model = Sequential([base, GlobalAveragePooling2D(name='global_average_pooling2d')]) 
 
         # Dense layer, tuner chooses activation function
         model.add(Dense(1024, activation = hp.Choice('dense_activation', 
-                                                    values = ['relu', 'leaky_relu', 'sigmoid'])))
+                                                    values = ['relu', 'leaky_relu', 'sigmoid']),
+                                                    name='dense_1024'))
         
         # Conditionally add dropout layer based on tuner options
         if hp.Boolean("dropout"):
-            model.add(Dropout(rate = 0.25))
+            model.add(Dropout(rate = 0.25, name='dropout_0.25'))
 
         # Adding softmax last dense layer
-        model.add(Dense(2, activation = 'softmax')) # Softmax for predicted probabilities of classification
+        model.add(Dense(2, activation = 'softmax', name='output_softmax')) # Softmax for predicted probabilities of classification
         
         # Tuner chooses learning rate between .0001 and .001, samples with LOG intervals
         learning_rate = hp.Float('lr', min_value = 1e-4, max_value = 1e-2, sampling = 'log')

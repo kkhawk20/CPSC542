@@ -2,11 +2,12 @@ import os
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.preprocessing.image import load_img
 from keras.models import load_model
 import cv2
+import tensorflow as tf
+from tensorflow.keras.models import Model
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -118,55 +119,63 @@ def model_eval(hist):
     # Save the grid image! s
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
 
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import img_to_array
-from tensorflow.keras.models import Model
 
-def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index):
-    vgg16_submodel = model.get_layer('vgg16')
-    print(vgg16_submodel.summary())
-    print(vgg16_submodel.input)
 
-    # Now create a model that connects the input of the main model to the outputs you are interested in
-    grad_model = Model(inputs=vgg_submodel.inputs,
-                    outputs=[vgg16_submodel.get_layer('block5_conv3').output,
-                                model.output])
-
-    # Record operations for automatic differentiation
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
+    # Get the last convolutional layer
+    last_conv_layer = model.get_layer(last_conv_layer_name)
+    last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
+    
+    # Create a model that maps the last conv layer output to the final model outputs
+    classifier_input = tf.keras.Input(shape=last_conv_layer.output.shape[1:])
+    x = classifier_input
+    for layer_name in ['vgg16', 'global_average_pooling2d', 'dense', 'dropout', 'dense_1']:  # Adjust these names based on your model structure
+        x = model.get_layer(layer_name)(x)
+    classifier_model = Model(classifier_input, x)
+    
     with tf.GradientTape() as tape:
-        conv_outputs, predictions = grad_model(img_array)
-        loss = predictions[:, pred_index]
-
-    # Get gradients of loss wrt the conv outputs
-    grads = tape.gradient(loss, conv_outputs)
-
-    # Each entry is the mean intensity of the gradient over a specific feature map channel
+        # Compute activations of the last conv layer and make the tape watch it
+        last_conv_layer_output = last_conv_layer_model(img_array)
+        tape.watch(last_conv_layer_output)
+        # Compute predictions
+        preds = classifier_model(last_conv_layer_output)
+        top_pred_index = tf.argmax(preds[0])
+        top_class_channel = preds[:, top_pred_index]
+    
+    # Use the gradients of the top predicted class with regard to the outputs of the last conv layer
+    grads = tape.gradient(top_class_channel, last_conv_layer_output)
+    
+    # Pooling and weighting of gradients
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-
-    # Weigh the output feature map channels by the importance to the prediction
-    conv_outputs = conv_outputs[0]
-    heatmap = tf.matmul(conv_outputs, pooled_grads[..., tf.newaxis])
+    
+    # Weight the channels of the last convolutional layer with the pooled gradients
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-
-    # For visualization, normalize the heatmap
+    
+    # Normalize the heatmap
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
 
-def apply_gradcam(img_array, model, last_conv_layer_name, pred_index):
+def apply_gradcam(img_array, model, last_conv_layer_name):
     # Generate the Grad-CAM heatmap
-    heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index)
+    heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name)
     
     # Rescale heatmap to a range 0-255
     heatmap = np.uint8(255 * heatmap)
     
     # Use cv2 to apply the heatmap to the original image
-    img_original = np.array(img)  # Convert PIL image to numpy array (ensure 'img' is your PIL image before resizing)
+    img_original = img_array[0]  # Assuming img_array was expanded along axis=0 for prediction, revert this operation
+    img_original = np.squeeze(img_original)  # Remove single-dimensional entries from the shape of an array.
+    
+    # If preprocessing included normalization or scaling, reverse these steps on img_original here
+    
     heatmap = cv2.resize(heatmap, (img_original.shape[1], img_original.shape[0]))
     heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    
+    # Assuming img_original is in [0, 255] range; if it's in [0, 1] range, you might need to scale it back to [0, 255] first
     superimposed_img = heatmap * 0.4 + img_original
-    superimposed_img = np.uint8(superimposed_img)
+    superimposed_img = np.clip(superimposed_img, 0, 255).astype('uint8')
     
     # Convert back to PIL image to keep the rest of your processing consistent
     return Image.fromarray(superimposed_img)
-
