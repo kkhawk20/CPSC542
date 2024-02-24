@@ -17,8 +17,7 @@ def train_model(data):
         # weights set to pre-trained from imagenet
         # Input size is the 300x300x3 for color image
         base = VGG16(include_top = False, weights = 'imagenet', 
-                    input_shape = (300, 300, 3),
-                    name = 'vgg16_base')
+                    input_shape = (300, 300, 3))
         
         # Beginning the model with the VGG16 and flatten layer
         model = Sequential([base, GlobalAveragePooling2D(name='global_average_pooling2d')]) 
@@ -54,7 +53,7 @@ def train_model(data):
     tuner = kt.RandomSearch(build_model,
                             objective = 'val_accuracy', 
                             max_trials = 10,
-                            #overwrite = True, # Needed to overwrite previous saves due to issues
+                            overwrite = True, # Needed to overwrite previous saves due to issues
                             directory = save_dir, 
                             project_name = 'Assignment1',
                             )
