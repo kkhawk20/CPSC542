@@ -124,14 +124,15 @@ from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import Model
 
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index):
-    # First, ensure that 'vgg16' is indeed the correct name of the VGG16 submodel within your main model
     vgg16_submodel = model.get_layer('vgg16')
+    print(vgg16_submodel.summary())
+    print(vgg16_submodel.input)
 
     # Now create a model that connects the input of the main model to the outputs you are interested in
-    grad_model = Model(inputs=model.inputs,
+    grad_model = Model(inputs=vgg_submodel.inputs,
                     outputs=[vgg16_submodel.get_layer('block5_conv3').output,
                                 model.output])
-                                
+
     # Record operations for automatic differentiation
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)

@@ -68,11 +68,11 @@ def train_model(data):
 
     # Utilizing checkpoint for saving model and early stopping to minmize loss 
     checkpoint = ModelCheckpoint(filepath = os.path.join(save_dir, "vgg16_KH.h5"), 
-                                monitor='accuracy', 
-                                verbose=0, save_best_only=True, 
+                                monitor='val_accuracy', 
+                                verbose=1, save_best_only=True, 
                                 save_weights_only=False, mode='auto', 
                                 save_freq='epoch')
-    early = EarlyStopping(monitor='accuracy', patience=10, 
+    early = EarlyStopping(monitor='val_accuracy', patience=10, 
                         verbose=1, mode='auto')
 
     # Fitting the best model found given the checkpoint and early stopping callbacks
