@@ -122,40 +122,23 @@ def model_eval(hist):
 
 
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
-    # Get the last convolutional layer
-    last_conv_layer = model.get_layer(last_conv_layer_name)
-    last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
-    
-    # Create a model that maps the last conv layer output to the final model outputs
-    classifier_input = tf.keras.Input(shape=last_conv_layer.output.shape[1:])
-    x = classifier_input
-    for layer_name in ['vgg16', 'global_average_pooling2d', 'dense', 'dropout', 'dense_1']:  # Adjust these names based on your model structure
-        x = model.get_layer(layer_name)(x)
-    classifier_model = Model(classifier_input, x)
-    
+    # Get the model with the specified layer's output
+    grad_model = Model(inputs=model.inputs, outputs=[model.get_layer(last_conv_layer_name).output, model.output])
+
     with tf.GradientTape() as tape:
-        # Compute activations of the last conv layer and make the tape watch it
-        last_conv_layer_output = last_conv_layer_model(img_array)
-        tape.watch(last_conv_layer_output)
-        # Compute predictions
-        preds = classifier_model(last_conv_layer_output)
-        top_pred_index = tf.argmax(preds[0])
-        top_class_channel = preds[:, top_pred_index]
-    
-    # Use the gradients of the top predicted class with regard to the outputs of the last conv layer
-    grads = tape.gradient(top_class_channel, last_conv_layer_output)
-    
-    # Pooling and weighting of gradients
+        conv_outputs, predictions = grad_model(img_array)
+        class_idx = tf.argmax(predictions[0])
+        loss = predictions[:, class_idx]
+
+    grads = tape.gradient(loss, conv_outputs)
+
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    heatmap = tf.matmul(conv_outputs[0], pooled_grads[..., tf.newaxis])
+    heatmap = tf.squeeze(heatmap).numpy()
+    heatmap = np.maximum(heatmap, 0) / np.max(heatmap)
     
-    # Weight the channels of the last convolutional layer with the pooled gradients
-    last_conv_layer_output = last_conv_layer_output[0]
-    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-    
-    # Normalize the heatmap
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-    return heatmap.numpy()
+    return heatmap
+
 
 def apply_gradcam(img_array, model, last_conv_layer_name):
     # Generate the Grad-CAM heatmap
