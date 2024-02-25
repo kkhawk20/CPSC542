@@ -23,9 +23,6 @@ def model_eval(hist):
     test_dir = os.path.join(data_dir, 'Test')
     image_size = (300,300)
     
-
-    # Create a model that outputs the last convolutional layer's output and the original model's output
-    
     if not os.path.exists(save_dir):
         print("Unable to save output images/files")
 
@@ -137,9 +134,6 @@ def model_eval(hist):
 
 
 ## Implementing GradCAM
-
-# Load your model (assuming it's already built and compiled)
-# model = ...  # Load your model here, which includes VGG16 as its base
 
 def get_img_path(base_dir):
     category = random.choice(['Fresh', 'Rotten'])  # Choose between 'fresh' or 'rotten'
