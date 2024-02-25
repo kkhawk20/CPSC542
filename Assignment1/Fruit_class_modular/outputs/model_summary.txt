@@ -20,7 +20,7 @@ Non-trainable params: 0
 _________________________________________________________________
 Tuner found the best activation function: sigmoid
 Tuner found the best learning rate: 0.01
-Best Model Test accuracy: 97.96%
-Best Model Test val_accuracy: 96.41%
-Best Model Test loss: 6.44%
-Best Model Test val_loss: 11.40%
+Best Model Test accuracy: 97.73%
+Best Model Test val_accuracy: 97.01%
+Best Model Test loss: 6.21%
+Best Model Test val_loss: 13.83%

@@ -124,20 +124,14 @@ def model_eval(hist):
     # Save the grid image! s
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
 
-
-
-
-
     # GRAD-CAM IMPLEMENTATION
     base_dir = test_dir  # Update this path
     img_path = get_img_path(base_dir)
 
     # Assuming `model` is your full model with VGG16 as the base and custom dense layers on top
     last_conv_layer_name = 'block5_conv3'  # Last conv layer in the VGG16 part
-    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'dropout_0.25', 'output_softmax']  # Example layer names following VGG16
-
     img_array = load_and_preprocess_image(img_path)  # Assuming you've already defined this function
-    heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
+    heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name)
     save_and_display_gradcam(img_path, heatmap, cam_path=os.path.join(save_dir, 'gradCAM.jpg'))  # Update save path
 
 
@@ -159,42 +153,34 @@ def load_and_preprocess_image(img_path):
     img_array_expanded = np.expand_dims(img_array, axis=0)
     return preprocess_input(img_array_expanded)
 
-def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_layer_names, pred_index=None):
-    # First, we create a model that maps the input image to the activations of the last conv layer
-    last_conv_layer = model.get_layer(last_conv_layer_name)
-    last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None):
+    # Get the VGG16 input
+    vgg16_input = model.get_layer('vgg16').input
 
-    # Now, create a model that maps the activations of the last conv layer to the final class predictions
-    # This includes all layers after the last_conv_layer and up to the output
-    classifier_input = tf.keras.Input(shape=last_conv_layer.output.shape[1:])
-    x = classifier_input
-    for layer_name in classifier_layer_names:
-        x = model.get_layer(layer_name)(x)
-    classifier_model = Model(classifier_input, x)
-
-    # Then, compute the gradient of the top predicted class for our input image
-    # with respect to the activations of the last conv layer
+    output_file_path = os.path.join(os.path.join(os.path.dirname(__file__), 'outputs'), 'VGGmodel_summary.txt')
+    with open(output_file_path, 'w') as f:
+        def print_to_file(text):
+            print(text, file=f)
+        model.get_layer('vgg16').summary(print_fn=print_to_file)
+    
+    # Get the last convolutional layer output from VGG16
+    last_conv_layer_output = model.get_layer('vgg16').get_layer(last_conv_layer_name).output
+    
+    # Get the final output of the Sequential model
+    final_output = model.output
+    
+    # Build the Grad-CAM model
+    grad_model = Model(inputs=vgg16_input, outputs=[last_conv_layer_output, final_output])
+    
     with tf.GradientTape() as tape:
-        # These are the activations of the last conv layer, as well as the outputs
-        # of the classifier model, which we will need to extract the gradients.
-        last_conv_layer_output = last_conv_layer_model(img_array)
-        tape.watch(last_conv_layer_output)
-        preds = classifier_model(last_conv_layer_output)
-        top_pred_index = tf.argmax(preds[0]) if pred_index is None else pred_index
-        top_class_channel = preds[:, top_pred_index]
+        conv_outputs, predictions = grad_model(img_array)
+        loss = predictions[:, pred_index] if pred_index is not None else tf.reduce_max(predictions, axis=1)
 
-    # This is the gradient of the top predicted class with respect to the output feature map of the last conv layer
-    grads = tape.gradient(top_class_channel, last_conv_layer_output)
-
-    # Vector of mean intensity of the gradient over a specific feature map channel
+    grads = tape.gradient(loss, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-
-    # Multiply each channel in the feature map array by "how important this channel is"
-    last_conv_layer_output = last_conv_layer_output[0]
-    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    conv_outputs = conv_outputs[0]
+    heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-
-    # Normalize the heatmap between 0 & 1 for visualization
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
 
