@@ -8,6 +8,9 @@ from keras.models import load_model
 import cv2
 import tensorflow as tf
 from tensorflow.keras.models import Model
+from tensorflow.keras.applications.vgg16 import preprocess_input
+from tensorflow.keras.preprocessing import image
+import matplotlib.cm as cm
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -19,7 +22,7 @@ def model_eval(hist):
     data_dir = os.path.join(base_dir, 'Data')
     test_dir = os.path.join(data_dir, 'Test')
     image_size = (300,300)
-    last_conv_layer_name = 'block5_conv3'
+    
 
     # Create a model that outputs the last convolutional layer's output and the original model's output
     
@@ -90,16 +93,18 @@ def model_eval(hist):
         img = load_img(img_path, target_size=image_size)
         img_array = np.asarray(img)
         img_array = np.expand_dims(img_array, axis=0)
+        img_array = preprocess_input(img_array)
 
         # Make predictions
         output = saved_model.predict(img_array)
         prediction = "Fresh" if output[0][0] > output[0][1] else "Rotten"
-        predicted_class_index = np.argmax(output, axis=1)[0]
-        gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name)
+        # predicted_class_index = np.argmax(output, axis=1)[0]
+        # last_conv_layer_name = 'block5_conv3'
+        # gradcam_img = apply_gradcam(img_array, saved_model, last_conv_layer_name)
 
         # Overlay the prediction on the image
         img = img.convert("RGB")
-        draw = ImageDraw.Draw(gradcam_img)
+        draw = ImageDraw.Draw(img)
         text_color = (255, 255, 255)  # White text color
         text_background = (0, 0, 0)  # Black background for text
         margin = 10
@@ -121,44 +126,101 @@ def model_eval(hist):
 
 
 
-def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
-    # Get the model with the specified layer's output
-    grad_model = Model(inputs=model.inputs, outputs=[model.get_layer(last_conv_layer_name).output, model.output])
 
+
+    # GRAD-CAM IMPLEMENTATION
+    base_dir = test_dir  # Update this path
+    img_path = get_img_path(base_dir)
+
+    # Assuming `model` is your full model with VGG16 as the base and custom dense layers on top
+    last_conv_layer_name = 'block5_conv3'  # Last conv layer in the VGG16 part
+    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'dropout_0.25', 'output_softmax']  # Example layer names following VGG16
+
+    img_array = load_and_preprocess_image(img_path)  # Assuming you've already defined this function
+    heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
+    save_and_display_gradcam(img_path, heatmap, cam_path=os.path.join(save_dir, 'gradCAM.jpg'))  # Update save path
+
+
+
+## Implementing GradCAM
+
+# Load your model (assuming it's already built and compiled)
+# model = ...  # Load your model here, which includes VGG16 as its base
+
+def get_img_path(base_dir):
+    category = random.choice(['Fresh', 'Rotten'])  # Choose between 'fresh' or 'rotten'
+    img_dir = os.path.join(base_dir, category)
+    img_name = random.choice(os.listdir(img_dir))
+    return os.path.join(img_dir, img_name)
+
+def load_and_preprocess_image(img_path):
+    img = image.load_img(img_path, target_size=(224, 224))
+    img_array = image.img_to_array(img)
+    img_array_expanded = np.expand_dims(img_array, axis=0)
+    return preprocess_input(img_array_expanded)
+
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_layer_names, pred_index=None):
+    # First, we create a model that maps the input image to the activations of the last conv layer
+    last_conv_layer = model.get_layer(last_conv_layer_name)
+    last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
+
+    # Now, create a model that maps the activations of the last conv layer to the final class predictions
+    # This includes all layers after the last_conv_layer and up to the output
+    classifier_input = tf.keras.Input(shape=last_conv_layer.output.shape[1:])
+    x = classifier_input
+    for layer_name in classifier_layer_names:
+        x = model.get_layer(layer_name)(x)
+    classifier_model = Model(classifier_input, x)
+
+    # Then, compute the gradient of the top predicted class for our input image
+    # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
-        conv_outputs, predictions = grad_model(img_array)
-        class_idx = tf.argmax(predictions[0])
-        loss = predictions[:, class_idx]
+        # These are the activations of the last conv layer, as well as the outputs
+        # of the classifier model, which we will need to extract the gradients.
+        last_conv_layer_output = last_conv_layer_model(img_array)
+        tape.watch(last_conv_layer_output)
+        preds = classifier_model(last_conv_layer_output)
+        top_pred_index = tf.argmax(preds[0]) if pred_index is None else pred_index
+        top_class_channel = preds[:, top_pred_index]
 
-    grads = tape.gradient(loss, conv_outputs)
+    # This is the gradient of the top predicted class with respect to the output feature map of the last conv layer
+    grads = tape.gradient(top_class_channel, last_conv_layer_output)
 
+    # Vector of mean intensity of the gradient over a specific feature map channel
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-    heatmap = tf.matmul(conv_outputs[0], pooled_grads[..., tf.newaxis])
-    heatmap = tf.squeeze(heatmap).numpy()
-    heatmap = np.maximum(heatmap, 0) / np.max(heatmap)
-    
-    return heatmap
 
+    # Multiply each channel in the feature map array by "how important this channel is"
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
 
-def apply_gradcam(img_array, model, last_conv_layer_name):
-    # Generate the Grad-CAM heatmap
-    heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name)
-    
+    # Normalize the heatmap between 0 & 1 for visualization
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
+
+def save_and_display_gradcam(img_path, heatmap, cam_path='cam.jpg', alpha=0.4):
+    # Load the original image
+    img = tf.keras.preprocessing.image.load_img(img_path)
+    img = tf.keras.preprocessing.image.img_to_array(img)
+
     # Rescale heatmap to a range 0-255
     heatmap = np.uint8(255 * heatmap)
-    
-    # Use cv2 to apply the heatmap to the original image
-    img_original = img_array[0]  # Assuming img_array was expanded along axis=0 for prediction, revert this operation
-    img_original = np.squeeze(img_original)  # Remove single-dimensional entries from the shape of an array.
-    
-    # If preprocessing included normalization or scaling, reverse these steps on img_original here
-    
-    heatmap = cv2.resize(heatmap, (img_original.shape[1], img_original.shape[0]))
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    
-    # Assuming img_original is in [0, 255] range; if it's in [0, 1] range, you might need to scale it back to [0, 255] first
-    superimposed_img = heatmap * 0.4 + img_original
-    superimposed_img = np.clip(superimposed_img, 0, 255).astype('uint8')
-    
-    # Convert back to PIL image to keep the rest of your processing consistent
-    return Image.fromarray(superimposed_img)
+
+    # Use jet colormap to colorize heatmap
+    jet = cm.get_cmap("jet")
+
+    # Use RGB values of the colormap
+    jet_colors = jet(np.arange(256))[:, :3]
+    jet_heatmap = jet_colors[heatmap]
+
+    # Create an image with RGB colorized heatmap
+    jet_heatmap = tf.keras.preprocessing.image.array_to_img(jet_heatmap)
+    jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
+    jet_heatmap = tf.keras.preprocessing.image.img_to_array(jet_heatmap)
+
+    # Superimpose the heatmap on original image
+    superimposed_img = jet_heatmap * alpha + img
+    superimposed_img = tf.keras.preprocessing.image.array_to_img(superimposed_img)
+
+    # Save the superimposed image
+    superimposed_img.save(cam_path)
