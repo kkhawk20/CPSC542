@@ -18,9 +18,9 @@ Total params: 15,242,050
 Trainable params: 527,362
 Non-trainable params: 14,714,688
 _________________________________________________________________
-Tuner found the best activation function: relu
-Tuner found the best learning rate: 0.03
-Best Model Test accuracy: 99.70%
-Best Model Test val_accuracy: 97.01%
-Best Model Test loss: 2.38%
-Best Model Test val_loss: 15.75%
+Tuner found the best activation function: leaky_relu
+Tuner found the best learning rate: 0.07
+Best Model Test accuracy: 98.87%
+Best Model Test val_accuracy: 96.41%
+Best Model Test loss: 3.66%
+Best Model Test val_loss: 23.34%
