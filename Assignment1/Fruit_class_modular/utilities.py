@@ -133,7 +133,6 @@ def model_eval(hist):
     save_and_display_gradcam(img_path, heatmap, cam_path=os.path.join(save_dir, 'gradCAM.jpg'))  # Update save path
 
 ## Implementing GradCAM
-
 def get_img_path(base_dir):
     category = random.choice(['Fresh', 'Rotten'])  # Choose between 'fresh' or 'rotten'
     img_dir = os.path.join(base_dir, category)
@@ -149,14 +148,14 @@ def load_and_preprocess_image(img_path):
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_layer_names, pred_index=None):
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
-    last_conv_layer = model.get_layer(last_conv_layer_name)
+    last_conv_layer = model.get_layer('vgg16').get_layer(last_conv_layer_name)
     last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
 
     output_file_path = os.path.join(os.path.join(os.path.dirname(__file__), 'outputs'), 'VGGmodel_summary.txt')
     with open(output_file_path, 'w') as f:
         def print_to_file(text):
             print(text, file=f)
-
+        # Print the vgg16 summary to file to troubleshooot
         last_conv_layer.summary(print_fn=print_to_file)
 
     # Now, we create a model that maps the activations of the last conv
