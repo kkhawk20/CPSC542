@@ -18,7 +18,9 @@ def train_model(data):
         # Input size is the 300x300x3 for color image
         base = VGG16(include_top = False, weights = 'imagenet', 
                     input_shape = (300, 300, 3))
-        
+        for layer in base.layers:
+            layer.trainable = False
+
         # Beginning the model with the VGG16 and flatten layer
         model = Sequential([base, GlobalAveragePooling2D(name='global_average_pooling2d')]) 
 
@@ -32,7 +34,7 @@ def train_model(data):
             model.add(Dropout(rate = 0.25, name='dropout_0.25'))
 
         # Adding softmax last dense layer
-        model.add(Dense(2, activation = 'softmax', name='output_softmax')) # Softmax for predicted probabilities of classification
+        model.add(Dense(2, activation = 'softmax', name='output_softmax')) # Sigmoid for binary classif
         
         # Tuner chooses learning rate between .0001 and .001, samples with LOG intervals
         learning_rate = hp.Float('lr', min_value = 1e-4, max_value = 1e-2, sampling = 'log')
@@ -53,7 +55,7 @@ def train_model(data):
     tuner = kt.RandomSearch(build_model,
                             objective = 'val_accuracy', 
                             max_trials = 10,
-                            # overwrite = True, # Needed to overwrite previous saves due to issues
+                            overwrite = True, # Needed to overwrite previous saves due to issues
                             directory = save_dir, 
                             project_name = 'Assignment1',
                             )

@@ -127,11 +127,10 @@ def model_eval(hist):
 
     # Assuming `model` is your full model with VGG16 as the base and custom dense layers on top
     last_conv_layer_name = 'block5_conv3'  # Last conv layer in the VGG16 part
+    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'dropout_0.25', 'output_softmax']
     img_array = load_and_preprocess_image(img_path)  # Assuming you've already defined this function
-    heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name)
+    heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
     save_and_display_gradcam(img_path, heatmap, cam_path=os.path.join(save_dir, 'gradCAM.jpg'))  # Update save path
-
-
 
 ## Implementing GradCAM
 
@@ -142,43 +141,60 @@ def get_img_path(base_dir):
     return os.path.join(img_dir, img_name)
 
 def load_and_preprocess_image(img_path):
-    img = image.load_img(img_path, target_size=(224, 224))
+    img = image.load_img(img_path, target_size=(300,300))
     img_array = image.img_to_array(img)
     img_array_expanded = np.expand_dims(img_array, axis=0)
     return preprocess_input(img_array_expanded)
 
-def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None):
-    # Get the VGG16 input
-    vgg16_input = model.get_layer('vgg16').input
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_layer_names, pred_index=None):
+    # First, we create a model that maps the input image to the activations
+    # of the last conv layer as well as the output predictions
+    last_conv_layer = model.get_layer(last_conv_layer_name)
+    last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
 
-    output_file_path = os.path.join(os.path.join(os.path.dirname(__file__), 'outputs'), 'VGGmodel_summary.txt')
-    with open(output_file_path, 'w') as f:
-        def print_to_file(text):
-            print(text, file=f)
-        model.get_layer('vgg16').summary(print_fn=print_to_file)
-    
-    # Get the last convolutional layer output from VGG16
-    last_conv_layer_output = model.get_layer('vgg16').get_layer(last_conv_layer_name).output
-    
-    # Get the final output of the Sequential model
-    final_output = model.output
-    
-    # Build the Grad-CAM model
-    grad_model = Model(inputs=vgg16_input, outputs=[last_conv_layer_output, final_output])
-    
+    # Now, we create a model that maps the activations of the last conv
+    # layer to the final class predictions
+    classifier_input = tf.keras.Input(shape=last_conv_layer.output.shape[1:])
+    x = classifier_input
+    for layer_name in classifier_layer_names:
+        x = model.get_layer(layer_name)(x)
+    classifier_model = Model(classifier_input, x)
+
+    # Then, we compute the gradient of the top predicted class for our input image
+    # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
-        conv_outputs, predictions = grad_model(img_array)
-        loss = predictions[:, pred_index] if pred_index is not None else tf.reduce_max(predictions, axis=1)
+        # Compute activations of the last conv layer and make the predictions
+        last_conv_layer_output = last_conv_layer_model(img_array)
+        tape.watch(last_conv_layer_output)
+        preds = classifier_model(last_conv_layer_output)
+        if pred_index is None:
+            pred_index = tf.argmax(preds[0])
+        top_class_channel = preds[:, pred_index]
 
-    grads = tape.gradient(loss, conv_outputs)
+    # This is the gradient of the top predicted class with regard to
+    # the output feature map of the last conv layer
+    grads = tape.gradient(top_class_channel, last_conv_layer_output)
+
+    # This is a vector where each entry is the mean intensity of the gradient
+    # over a specific feature map channel
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-    conv_outputs = conv_outputs[0]
-    heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-    return heatmap.numpy()
 
-def save_and_display_gradcam(img_path, heatmap, cam_path='cam.jpg', alpha=0.4):
+    # Multiply each channel in the feature map array by 'how important this channel is'
+    # with regard to the top predicted class
+    last_conv_layer_output = last_conv_layer_output.numpy()[0]
+    pooled_grads = pooled_grads.numpy()
+    for i in range(pooled_grads.shape[-1]):
+        last_conv_layer_output[:, :, i] *= pooled_grads[i]
+
+    # The channel-wise mean of the resulting feature map
+    # is our heatmap of class activation
+    heatmap = np.mean(last_conv_layer_output, axis=-1)
+
+    # For visualization purpose, we will also normalize the heatmap between 0 & 1
+    heatmap = np.maximum(heatmap, 0) / np.max(heatmap)
+    return heatmap
+
+def save_and_display_gradcam(img_path, heatmap, cam_path, alpha=0.4):
     # Load the original image
     img = tf.keras.preprocessing.image.load_img(img_path)
     img = tf.keras.preprocessing.image.img_to_array(img)
