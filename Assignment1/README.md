@@ -29,4 +29,6 @@ Resources + ones I used to learn about things:
 ChatGPT Prompt Uses:
 * "Help me brainstorm visualizations for a CNN deep learning model. I need to assess my models performance" - this was utilized to figure out how to graph some visualizations utilizing code and understand them
 * "I need to create a grid of images that will have 5 random images taken from my test dataset, then do predictions on them given my saved model and save the images with predicted output on top of them into one jpg file" - This was utilized to create an outline to create a grid of images with predicted output from the model for visual!
+* "Help me implement GradCAM" - Gradcam
+* ALso utilized to troubleshoot code not working with gradCAM
 
