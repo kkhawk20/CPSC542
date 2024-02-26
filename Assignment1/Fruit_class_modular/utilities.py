@@ -21,7 +21,7 @@ def model_eval(hist):
     base_dir = os.path.dirname(os.path.realpath(__file__))
     data_dir = os.path.join(base_dir, 'Data')
     test_dir = os.path.join(data_dir, 'Test')
-    image_size = (300,300)
+    image_size = (244,244)
     
     if not os.path.exists(save_dir):
         print("Unable to save output images/files")
@@ -141,7 +141,7 @@ def get_img_path(base_dir):
     return os.path.join(img_dir, img_name)
 
 def load_and_preprocess_image(img_path):
-    img = image.load_img(img_path, target_size=(300,300))
+    img = image.load_img(img_path, target_size=(244,244))
     img_array = image.img_to_array(img)
     img_array_expanded = np.expand_dims(img_array, axis=0)
     return preprocess_input(img_array_expanded)

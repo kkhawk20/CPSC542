@@ -18,7 +18,7 @@ def load_data():
     val_dir = os.path.join(data_dir, 'Val')
 
     # Pre-setting the known image size and set batch size
-    image_size = (300,300)
+    image_size = (244,244)
     batch_size = 32
 
     # Adding preprocessing for augmentation!! 
@@ -29,7 +29,8 @@ def load_data():
         height_shift_range = 0.2,
         horizontal_flip = True,
         zoom_range = 0.2,
-        fill_mode = 'nearest'
+        fill_mode = 'nearest',
+        preprocessing_function = preprocess_input
     )
     # Reading in training DS with categorical classes
     train_ds = trData.flow_from_directory(directory = train_dir, 
@@ -38,14 +39,14 @@ def load_data():
                                         batch_size = batch_size)
 
     # Reading in testing DS with categorical classes
-    teData = ImageDataGenerator()
+    teData = ImageDataGenerator(preprocessing_function = preprocess_input)
     test_ds = teData.flow_from_directory(directory = test_dir, 
                                         target_size = image_size, 
                                         class_mode = 'categorical', 
                                         batch_size = batch_size)
 
     # Reading in validation DS with categorical classes
-    valData = ImageDataGenerator()
+    valData = ImageDataGenerator(preprocessing_function = preprocess_input)
     val_ds = valData.flow_from_directory(directory = val_dir, 
                                         target_size = image_size, 
                                         class_mode = 'categorical', 
