@@ -15,9 +15,9 @@ def train_model(data):
     def build_model(hp):
         # The base structure is a VGG16 with no top layer, 
         # weights set to pre-trained from imagenet
-        # Input size is the 300x300x3 for color image
+        # Input size is the 244x244x3 for color image
         base = VGG16(include_top = False, weights = 'imagenet', 
-                    input_shape = (300, 300, 3))
+                    input_shape = (244, 244, 3))
         for layer in base.layers:
             layer.trainable = False
 
