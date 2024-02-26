@@ -11,7 +11,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing import image
 import matplotlib.cm as cm
-
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -122,15 +121,13 @@ def model_eval(hist):
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
 
     # GRAD-CAM IMPLEMENTATION
-    base_dir = test_dir  # Update this path
-    img_path = get_img_path(base_dir)
-
     # Assuming `model` is your full model with VGG16 as the base and custom dense layers on top
     last_conv_layer_name = 'block5_conv3'  # Last conv layer in the VGG16 part
-    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'dropout_0.25', 'output_softmax']
+    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'output_softmax']
     img_array = load_and_preprocess_image(img_path)  # Assuming you've already defined this function
     heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
     save_and_display_gradcam(img_path, heatmap, cam_path=os.path.join(save_dir, 'gradCAM.jpg'))  # Update save path
+
 
 ## Implementing GradCAM
 def get_img_path(base_dir):
@@ -148,15 +145,17 @@ def load_and_preprocess_image(img_path):
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_layer_names, pred_index=None):
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
-    last_conv_layer = model.get_layer('vgg16').get_layer(last_conv_layer_name)
-    last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
 
-    output_file_path = os.path.join(os.path.join(os.path.dirname(__file__), 'outputs'), 'VGGmodel_summary.txt')
-    with open(output_file_path, 'w') as f:
-        def print_to_file(text):
-            print(text, file=f)
-        # Print the vgg16 summary to file to troubleshooot
-        last_conv_layer.summary(print_fn=print_to_file)
+    last_conv_layer = model.get_layer('vgg16').get_layer(last_conv_layer_name)
+    last_conv_layer_model = Model(inputs = model.get_layer('vgg16').input,
+                                outputs = last_conv_layer.output)
+
+    # output_file_path = os.path.join(os.path.join(os.path.dirname(__file__), 'outputs'), 'VGGmodel_summary.txt')
+    # with open(output_file_path, 'w') as f:
+    #     def print_to_file(text):
+    #         print(text, file=f)
+    #     # Print the vgg16 summary to file to troubleshooot
+    #     last_conv_layer.summary(print_fn=print_to_file)
 
     # Now, we create a model that maps the activations of the last conv
     # layer to the final class predictions
