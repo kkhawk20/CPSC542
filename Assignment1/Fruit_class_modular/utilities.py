@@ -152,6 +152,14 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_laye
     last_conv_layer = model.get_layer(last_conv_layer_name)
     last_conv_layer_model = Model(model.inputs, last_conv_layer.output)
 
+    
+    output_file_path = os.path.join(os.path.join(os.path.dirname(__file__), 'outputs'), 'VGGmodel_summary.txt')
+    with open(output_file_path, 'w') as f:
+        def print_to_file(text):
+            print(text, file=f)
+
+        last_conv_layer.summary(print_fn=print_to_file)
+
     # Now, we create a model that maps the activations of the last conv
     # layer to the final class predictions
     classifier_input = tf.keras.Input(shape=last_conv_layer.output.shape[1:])

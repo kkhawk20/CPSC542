@@ -55,7 +55,7 @@ def train_model(data):
     tuner = kt.RandomSearch(build_model,
                             objective = 'val_accuracy', 
                             max_trials = 10,
-                            overwrite = True, # Needed to overwrite previous saves due to issues
+                            #overwrite = True, # Needed to overwrite previous saves due to issues
                             directory = save_dir, 
                             project_name = 'Assignment1',
                             )
