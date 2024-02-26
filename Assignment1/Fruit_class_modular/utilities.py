@@ -14,7 +14,6 @@ import matplotlib.cm as cm
 import warnings
 warnings.filterwarnings('ignore')
 
-
 ## Implementing GradCAM
 def get_img_path(base_dir):
     category = random.choice(['Fresh', 'Rotten'])  # Choose between 'fresh' or 'rotten'
@@ -158,6 +157,8 @@ def model_eval(hist):
 
     # Testing with 5 images from the testing set... using saved model
     saved_model = load_model(os.path.join(save_dir, 'vgg16_KH.h5'))
+    last_conv_layer_name = 'block5_conv3'  # Last conv layer in the VGG16 part
+    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'output_softmax']
 
     subclasses = [d for d in os.listdir(test_dir) if os.path.isdir(os.path.join(test_dir, d))]
     selected_images = []
@@ -215,7 +216,7 @@ def model_eval(hist):
     # Save the grid image! s
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
 
-    # 5 images with gradcam! 
+    # 5 images with gradcam overlay! 
     for index, filename in enumerate(selected_images):
         # Load and process each image
         img_path = os.path.join(test_dir, filename)
@@ -229,7 +230,7 @@ def model_eval(hist):
         heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
 
         # Overlay heatmap on original image
-        overlay_image_path = os.path.join(save_dir, f'overlay_{index}.jpg')  # Example path for overlay image
+        # overlay_image_path = os.path.join(save_dir, f'overlay_{index}.jpg')  # Example path for overlay image
         save_and_display_gradcam(img_path, heatmap, overlay_image_path, alpha=0.4)
         overlay_img = Image.open(overlay_image_path)  # Load the overlay image
 
@@ -255,8 +256,6 @@ def model_eval(hist):
 
     # GRAD-CAM IMPLEMENTATION
     # Assuming `model` is your full model with VGG16 as the base and custom dense layers on top
-    last_conv_layer_name = 'block5_conv3'  # Last conv layer in the VGG16 part
-    classifier_layer_names = ['global_average_pooling2d', 'dense_1024', 'output_softmax']
     img_array = load_and_preprocess_image(img_path)  # Assuming you've already defined this function
     heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
     save_and_display_gradcam(img_path, heatmap, cam_path=os.path.join(save_dir, 'gradCAM.jpg'))  # Update save path

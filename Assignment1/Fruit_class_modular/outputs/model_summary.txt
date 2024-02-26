@@ -9,8 +9,6 @@ _________________________________________________________________
                                                                  
  dense_1024 (Dense)          (None, 1024)              525312    
                                                                  
- dropout_0.25 (Dropout)      (None, 1024)              0         
-                                                                 
  output_softmax (Dense)      (None, 2)                 2050      
                                                                  
 =================================================================
@@ -18,9 +16,9 @@ Total params: 15,242,050
 Trainable params: 527,362
 Non-trainable params: 14,714,688
 _________________________________________________________________
-Tuner found the best activation function: leaky_relu
-Tuner found the best learning rate: 0.07
-Best Model Test accuracy: 98.64%
-Best Model Test val_accuracy: 95.21%
-Best Model Test loss: 4.19%
-Best Model Test val_loss: 33.88%
+Tuner found the best activation function: relu
+Tuner found the best learning rate: 0.68
+Best Model Test accuracy: 97.96%
+Best Model Test val_accuracy: 97.60%
+Best Model Test loss: 5.35%
+Best Model Test val_loss: 16.78%
