@@ -216,7 +216,7 @@ def model_eval(hist):
     # Save the grid image! s
     grid_image.save(os.path.join(save_dir, 'test_predictions_grid.jpg'))
 
-    # 5 images with gradcam overlay! 
+    # 5 images with GRADCAM overlay! 
     for index, filename in enumerate(selected_images):
         # Load and process each image
         img_path = os.path.join(test_dir, filename)
@@ -230,13 +230,13 @@ def model_eval(hist):
         heatmap = make_gradcam_heatmap(img_array, saved_model, last_conv_layer_name, classifier_layer_names)
 
         # Overlay heatmap on original image
-        # overlay_image_path = os.path.join(save_dir, f'overlay_{index}.jpg')  # Example path for overlay image
+        overlay_image_path = os.path.join(save_dir, f'overlay_{index}.jpg')  # Example path for overlay image
         save_and_display_gradcam(img_path, heatmap, overlay_image_path, alpha=0.4)
         overlay_img = Image.open(overlay_image_path)  # Load the overlay image
 
         # Overlay the prediction on the image
         img = img.convert("RGB")
-        draw = ImageDraw.Draw(img)
+        draw = ImageDraw.Draw(overlay_img)
         text_color = (255, 255, 255)  # White text color
         text_background = (0, 0, 0)  # Black background for text
         margin = 10
@@ -245,7 +245,6 @@ def model_eval(hist):
                         (text_width + 2 * margin, img.height)], 
                     fill=text_background)
         draw.text((margin, img.height - text_height - margin), prediction, font=font, fill=text_color)
-
 
         # Calculate the position of the image in the grid and paste
         x = index % grid_size[0] * image_size[0]

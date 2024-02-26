@@ -18,7 +18,7 @@ Non-trainable params: 14,714,688
 _________________________________________________________________
 Tuner found the best activation function: relu
 Tuner found the best learning rate: 0.68
-Best Model Test accuracy: 97.96%
-Best Model Test val_accuracy: 97.60%
-Best Model Test loss: 5.35%
-Best Model Test val_loss: 16.78%
+Best Model Test accuracy: 97.43%
+Best Model Test val_accuracy: 95.21%
+Best Model Test loss: 6.96%
+Best Model Test val_loss: 34.19%
