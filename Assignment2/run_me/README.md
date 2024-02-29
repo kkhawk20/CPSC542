@@ -13,6 +13,7 @@ Resources + ones I used to learn about things:
 * Dr.Parlett's github repo (392 & 393)
 * Caitlyn's Office Hours
 * https://www.geeksforgeeks.org/u-net-architecture-explained/
+* https://github.com/zhixuhao/unet/blob/master/model.py
 * 
 
 ChatGPT Prompt Uses:
