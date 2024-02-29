@@ -1,101 +1,64 @@
+import numpy as np 
 import os
-import keras_tuner as kt
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.applications.vgg16 import VGG16
-from keras.callbacks import ModelCheckpoint, EarlyStopping
-import warnings
-warnings.filterwarnings('ignore')
+import skimage.io as io
+import skimage.transform as trans
+import numpy as np
+from keras.models import *
+from keras.layers import *
+from keras.optimizers import *
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler
+from keras import backend as keras
 
-def train_model(data):
 
-    train_ds, test_ds, val_ds = data
+def unet(pretrained_weights = None,input_size = (256,256,1)):
+    inputs = Input(input_size)
+    conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
+    conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+    conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool1)
+    conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool2)
+    conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv3)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+    conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool3)
+    conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv4)
+    drop4 = Dropout(0.5)(conv4)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
 
-    def build_model(hp):
-        # The base structure is a VGG16 with no top layer, 
-        # weights set to pre-trained from imagenet
-        # Input size is the 244x244x3 for color image
-        base = VGG16(include_top = False, weights = 'imagenet', 
-                    input_shape = (244, 244, 3))
-        for layer in base.layers:
-            layer.trainable = False
+    conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool4)
+    conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv5)
+    drop5 = Dropout(0.5)(conv5)
 
-        # Beginning the model with the VGG16 and flatten layer
-        model = Sequential([base, GlobalAveragePooling2D(name='global_average_pooling2d')]) 
+    up6 = Conv2D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(drop5))
+    merge6 = concatenate([drop4,up6], axis = 3)
+    conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge6)
+    conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv6)
 
-        # Dense layer, tuner chooses activation function
-        model.add(Dense(1024, activation = hp.Choice('dense_activation', 
-                                                    values = ['relu', 'leaky_relu', 'sigmoid']),
-                                                    name='dense_1024'))
-        
-        # Conditionally add dropout layer based on tuner options
-        if hp.Boolean("dropout"):
-            model.add(Dropout(rate = 0.25, name='dropout_0.25'))
+    up7 = Conv2D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv6))
+    merge7 = concatenate([conv3,up7], axis = 3)
+    conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge7)
+    conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv7)
 
-        # Adding softmax last dense layer
-        model.add(Dense(2, activation = 'softmax', name='output_softmax')) # Sigmoid for binary classif
-        
-        # Tuner chooses learning rate between .0001 and .001, samples with LOG intervals
-        learning_rate = hp.Float('lr', min_value = 1e-4, max_value = 1e-2, sampling = 'log')
+    up8 = Conv2D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv7))
+    merge8 = concatenate([conv2,up8], axis = 3)
+    conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge8)
+    conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv8)
 
-        # Compiles utilizing ADAM, tuned learning rate, loss function of binary_crossentropy for 
-        # Binary predictions (Fresh / Rotten), validation accuracy is metric to track
-        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate), 
-                    loss = 'binary_crossentropy', metrics = ['accuracy'],
-                    )
-        
-        return model
+    up9 = Conv2D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv8))
+    merge9 = concatenate([conv1,up9], axis = 3)
+    conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge9)
+    conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
+    conv9 = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
+    conv10 = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
-    # Saving images/outputs to outputs folder
-    save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
-    if not os.path.exists(save_dir):
-        print("Unable to save output images/files")
+    model = Model(input = inputs, output = conv10)
+
+    model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
     
-    tuner = kt.RandomSearch(build_model,
-                            objective = 'val_accuracy', 
-                            max_trials = 10,
-                            #overwrite = True, # Needed to overwrite previous saves due to issues
-                            directory = save_dir, 
-                            project_name = 'Assignment1',
-                            )
+    model.summary()
 
-    tuner.search(train_ds, epochs = 50, 
-                validation_data = val_ds, 
-                verbose = 1)
+    if(pretrained_weights):
+    	model.load_weights(pretrained_weights)
 
-    best_hp = tuner.get_best_hyperparameters(num_trials = 1)[0]
-
-    # Correctly get the best model and evaluate it
-    best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
-
-    # Utilizing checkpoint for saving model and early stopping to minmize loss 
-    checkpoint = ModelCheckpoint(filepath = os.path.join(save_dir, "vgg16_KH.h5"), 
-                                monitor='val_accuracy', 
-                                verbose=1, save_best_only=True, 
-                                save_weights_only=False, mode='auto', 
-                                save_freq='epoch')
-    early = EarlyStopping(monitor='val_accuracy', patience=5, 
-                        verbose=1, mode='auto')
-
-    # Fitting the best model found given the checkpoint and early stopping callbacks
-    hist = best_model.fit(train_ds, validation_data=val_ds, 
-                        epochs=100, 
-                        callbacks=[checkpoint, early], verbose=2)
-
-    # Define a custom print function that writes to the file
-    # Utilizing this for further reading of the ouptut, documentation into the model_summary
-    output_file_path = os.path.join(save_dir, 'model_summary.txt')
-    with open(output_file_path, 'w') as f:
-        def print_to_file(text):
-            print(text, file=f)
-
-        best_model.summary(print_fn=print_to_file)
-        print_to_file(f"Tuner found the best activation function: {best_hp.get('dense_activation')}")
-        print_to_file(f"Tuner found the best learning rate: {best_hp.get('lr') * 100:.2f}")
-        print_to_file(f"Best Model Test accuracy: {hist.history['accuracy'][0] * 100:.2f}%")
-        print_to_file(f"Best Model Test val_accuracy: {hist.history['val_accuracy'][0] * 100:.2f}%")
-        print_to_file(f"Best Model Test loss: {hist.history['loss'][0] * 100:.2f}%")
-        print_to_file(f"Best Model Test val_loss: {hist.history['val_loss'][0] * 100:.2f}%")
-
-    return hist
+    return model
