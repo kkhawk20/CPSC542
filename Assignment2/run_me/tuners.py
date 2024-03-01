@@ -1,21 +1,27 @@
 import numpy as np 
-import os
 import skimage.io as io
 import skimage.transform as trans
 import numpy as np
 from keras.models import *
 from keras.layers import *
-from keras.optimizers import *
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler
+from tensorflow.keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler, EarlyStopping
 from keras import backend as keras
 
-def unet(pretrained_weights = None,input_size = (256,256,1), data):
+def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
 
     train_ds, test_ds, val_ds = data
 
+    def scheduler(epoch, lr):
+        if epoch < 10:
+            return lr
+        else:
+            return lr * ops.exp(-0.1)
+
     callbacks = [
-        EarlyStopping(patience = 10, verbose = 2),
-        ModelCheckpoint('unet_KH.h5', verbose = 1, save_best_only = True)
+        EarlyStopping(patience = 10, verbose = 1),
+        ModelCheckpoint('unet_KH.h5', verbose = 1, save_best_only = True),
+        LearningRateScheduler(scheduler, verbose = 1)
     ]
 
     inputs = Input(input_size)
@@ -59,7 +65,10 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data):
     conv9 = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
     outputs = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
-    model = Model(input = inputs, output = outputs)
+    if(pretrained_weights):
+        model.load_weights(pretrained_weights)
+
+    model = Model(inputs = inputs, outputs = outputs)
 
     model.compile(optimizer = keras.optimizers.Adam(lr = 1e-4), 
                   loss = 'binary_crossentropy', 
@@ -69,7 +78,5 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data):
 
     history = model.fit(train_ds, validation_data = val_ds, callbacks = callbacks, epochs = 100)
 
-    if(pretrained_weights):
-    	model.load_weights(pretrained_weights)
-
+   
     return model
