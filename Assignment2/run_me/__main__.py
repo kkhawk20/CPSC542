@@ -3,9 +3,9 @@
 
 from . import *
 def main():
-    print("Running Fruit Classifier...")
+    print("Running Image Segmentation Model!! ...")
     data = load_data()
-    train = train_model(data)
+    train = unet(data)
     util = model_eval(train)
 
 if __name__ == '__main__':

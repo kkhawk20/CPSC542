@@ -4,11 +4,12 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, EarlyStopping
 import keras
 import numpy as np
+import os
 
 def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
 
     train_ds, test_ds, val_ds = data
-
+    save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
     def scheduler(epoch, lr):
         if epoch < 10:
             return lr
@@ -17,7 +18,7 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
 
     callbacks = [
         EarlyStopping(patience = 10, verbose = 1),
-        ModelCheckpoint('unet_KH.h5', verbose = 1, save_best_only = True),
+        ModelCheckpoint(filepath = os.path.join(save_dir,'unet_KH.h5'), verbose = 1, save_best_only = True),
         LearningRateScheduler(scheduler, verbose = 1)
     ]
 
