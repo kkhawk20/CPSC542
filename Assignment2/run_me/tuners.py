@@ -6,9 +6,8 @@ import keras
 import numpy as np
 import os
 
-def unet(data):
+def unet(train_gen, val_gen, test_gen):
 
-    train_gen, val_gen, test_gen = data
     input_size=(256,256,1)
     save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
     def scheduler(epoch, lr):
