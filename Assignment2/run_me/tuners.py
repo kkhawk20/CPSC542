@@ -1,12 +1,9 @@
-import numpy as np 
-import skimage.io as io
-import skimage.transform as trans
-import numpy as np
-from keras.models import *
-from keras.layers import *
+from tensorflow.keras.models import *
+from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import Adam
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler, EarlyStopping
-from keras import backend as keras
+from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, EarlyStopping
+import keras
+import numpy as np
 
 def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
 
@@ -16,7 +13,7 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
         if epoch < 10:
             return lr
         else:
-            return lr * ops.exp(-0.1)
+            return lr * np.exp(-0.1)
 
     callbacks = [
         EarlyStopping(patience = 10, verbose = 1),
@@ -65,18 +62,17 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
     conv9 = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
     outputs = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
+    model = Model(inputs = inputs, outputs = outputs)
     if(pretrained_weights):
         model.load_weights(pretrained_weights)
 
-    model = Model(inputs = inputs, outputs = outputs)
-
-    model.compile(optimizer = keras.optimizers.Adam(lr = 1e-4), 
+    model.compile(optimizer = Adam(learning_rate = 1e-4), 
                   loss = 'binary_crossentropy', 
                   metrics = ['accuracy'])
     
     model.summary()
 
-    history = model.fit(train_ds, validation_data = val_ds, callbacks = callbacks, epochs = 100)
+    history = model.fit(train_ds, validation_data = val_ds, 
+                        callbacks = callbacks, epochs = 100)
 
-   
-    return model
+    return history
