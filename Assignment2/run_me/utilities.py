@@ -5,11 +5,8 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.preprocessing.image import load_img
 from keras.models import load_model
-import tensorflow as tf
-from tensorflow.keras.models import Model
-from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing import image
-import matplotlib.cm as cm
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -19,11 +16,41 @@ def get_img_path(base_dir):
     img_name = random.choice(os.listdir(img_dir))
     return os.path.join(img_dir, img_name)
 
-def load_and_preprocess_image(img_path):
-    img = image.load_img(img_path, target_size=(244,244))
-    img_array = image.img_to_array(img)
-    img_array_expanded = np.expand_dims(img_array, axis=0)
-    return preprocess_input(img_array_expanded)
+def calculate_iou(y_true, y_pred, smooth=1e-6):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=[1,2,3])
+    union = K.sum(y_true,[1,2,3])+K.sum(y_pred,[1,2,3])-intersection
+    iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
+    return iou
+
+def dice_coefficient(y_true, y_pred, smooth=1e-6):
+    intersection = K.sum(y_true * y_pred, axis=[1, 2, 3])
+    union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3])
+    dice = K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
+    return dice
+
+def overlay_segmentation(image_path, model, classes):
+    original_image = load_img(image_path, target_size=(256, 256))
+    numpy_image = img_to_array(original_image)
+    input_image = np.expand_dims(numpy_image, axis=0)
+    predictions = model.predict(input_image)
+
+    # Assuming your model outputs a softmax layer, convert to a segmentation mask
+    predicted_mask = np.argmax(predictions, axis=-1)
+    predicted_mask = np.squeeze(predicted_mask, axis=0)
+
+    plt.figure(figsize=(10, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.title("Original Image")
+    plt.imshow(original_image)
+
+    plt.subplot(1, 2, 2)
+    plt.title("Segmentation")
+    plt.imshow(original_image)
+
+    # Overlay mask
+    plt.imshow(predicted_mask, alpha=0.5, cmap='jet')  # Change alpha to adjust transparency
+    plt.show()
 
 
 def model_eval(hist):
