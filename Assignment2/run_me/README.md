@@ -18,4 +18,5 @@ Resources + ones I used to learn about things:
 
 ChatGPT Prompt Uses:
 
-
+* We need a mask for per-pixel labels...
+* 
