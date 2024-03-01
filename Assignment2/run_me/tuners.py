@@ -6,9 +6,10 @@ import keras
 import numpy as np
 import os
 
-def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
+def unet(data):
 
-    train_ds, test_ds, val_ds = data
+    train_gen, val_gen, test_gen = data
+    input_size=(256,256,1)
     save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
     def scheduler(epoch, lr):
         if epoch < 10:
@@ -64,8 +65,9 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
     outputs = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
     model = Model(inputs = inputs, outputs = outputs)
-    if(pretrained_weights):
-        model.load_weights(pretrained_weights)
+
+    # if(pretrained_weights):
+    #     model.load_weights(pretrained_weights)
 
     model.compile(optimizer = Adam(learning_rate = 1e-4), 
                   loss = 'binary_crossentropy', 
@@ -73,7 +75,7 @@ def unet(pretrained_weights = None,input_size = (256,256,1), data = None):
     
     model.summary()
 
-    history = model.fit(train_ds, validation_data = val_ds, 
+    history = model.fit(train_gen, validation_data = val_gen, 
                         callbacks = callbacks, epochs = 100)
 
     return history
