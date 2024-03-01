@@ -1,6 +1,5 @@
 # data_preprocessing.py
-# Purpose is to load in TTV data, augment training set
-
+# Purpose is to load in TTV data
 
 import os
 from tensorflow.keras.utils import Sequence

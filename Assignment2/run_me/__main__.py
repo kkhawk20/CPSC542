@@ -2,6 +2,8 @@
 # in terminal, type in: python3 -m Fruit_class_modular
 
 from . import *
+import tensorflow as tf
+
 def main():
     print("Running Image Segmentation Model!! ...")
     # Load the data using the custom SegmentationDataGenerator
@@ -14,6 +16,10 @@ def main():
     model_eval(model=history, test_gen=test_gen)
 
 if __name__ == '__main__':
+
+
+    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+
     main()
 
     
