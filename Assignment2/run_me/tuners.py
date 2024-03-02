@@ -96,10 +96,12 @@ def unet(train_gen, val_gen, test_gen):
     history = model.fit(train_gen, validation_data = val_gen, 
                         callbacks = callbacks, epochs = 500)
 
-    output_file_path = os.path.join(save_dir, 'model_summary.txt')
-    with open(output_file_path, 'w') as f:
-        def print_to_file(text):
-            print(text, file=f)
+      # Load the best model
+    best_model = load_model(model_checkpoint_path)
 
-        history.best_model.summary(print_fn=print_to_file)
-    return model, history
+    # Save best model's summary to file
+    output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
+    with open(output_file_path, 'w') as f:
+        best_model.summary(print_fn=lambda x: f.write(x + '\n'))
+
+    return best_model, history
