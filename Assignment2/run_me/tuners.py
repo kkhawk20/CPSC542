@@ -94,6 +94,6 @@ def unet(train_gen, val_gen, test_gen):
     print(model.summary())
 
     history = model.fit(train_gen, validation_data = val_gen, 
-                        callbacks = callbacks, epochs = 100)
+                        callbacks = callbacks, epochs = 500)
 
     return model, history

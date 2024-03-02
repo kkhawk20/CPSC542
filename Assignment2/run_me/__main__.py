@@ -13,7 +13,7 @@ def main():
     model, history = unet(train_gen, val_gen, test_gen)
     
     # Evaluate the model using the test generator and calculate metrics
-    model_eval(model=history, test_gen=test_gen)
+    model_eval()
 
 if __name__ == '__main__':
 

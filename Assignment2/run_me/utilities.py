@@ -19,7 +19,7 @@ def dice_coefficient(y_true, y_pred, smooth=1e-6):
     dice = K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
     return dice
 
-def overlay_segmentation(image_path, model):
+def overlay_segmentation(image_path, model, save_dir):
     original_image = load_img(image_path, target_size=(256, 256))
     numpy_image = img_to_array(original_image)
     input_image = np.expand_dims(numpy_image, axis=0)
@@ -36,10 +36,20 @@ def overlay_segmentation(image_path, model):
     plt.title("Segmentation")
     plt.imshow(original_image)
     plt.imshow(predicted_mask, alpha=0.5, cmap='jet')  # Adjust transparency with alpha
-    plt.show()
+    
+    # Save the figure to the specified directory
+    image_name = os.path.basename(image_path)
+    save_path = os.path.join(save_dir, f"overlay_{image_name}")
+    plt.savefig(save_path)
+    plt.close()  # Close the plot to free memory
 
-def model_eval(model_path, test_images_dir):
-    model = load_model(model_path)
+def model_eval():
+    
+    test_images_dir = os.path.join(os.path.dirname(__file__), 'Data_new/Test/Images')
+    model = load_model(os.path.join(os.path.dirname(__file__), 'outputs/unet_KH.h5'))
+    save_dir = os.path.join(os.path.dirname(__file__), 'outputs')  # Specify where to save overlay images
+    os.makedirs(save_dir, exist_ok=True)  # Create save directory if it doesn't exist
+
     image_paths = [os.path.join(test_images_dir, img) for img in os.listdir(test_images_dir)]
     
     # Assume test_images_dir contains pairs of image and mask files, or adjust accordingly
@@ -53,7 +63,7 @@ def model_eval(model_path, test_images_dir):
 
         # Load corresponding mask
         # This part depends on how your dataset is structured
-        mask_path = image_path.replace('images', 'masks')  # Adjust based on your directory structure
+        mask_path = image_path.replace('Images', 'Masks')  # Adjust based on your directory structure
         true_mask = load_img(mask_path, target_size=(256, 256), color_mode="grayscale")
         true_mask = img_to_array(true_mask)
         true_mask = true_mask / 255.0  # Normalize mask to [0, 1] if needed
@@ -69,9 +79,6 @@ def model_eval(model_path, test_images_dir):
 
         # Optionally, visualize the first few images
         if len(ious) <= 5:  # Adjust the number of images to visualize
-            overlay_segmentation(image_path, model)
+            overlay_segmentation(image_path, model, save_dir)
     
     print(f"Average IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
-
-# Example usage
-# model_eval('path_to_your_model.h5', 'path_to_your_test_images')
