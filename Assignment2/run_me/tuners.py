@@ -64,7 +64,7 @@ def unet(train_gen, val_gen, test_gen):
     conv9 = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
     outputs = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
-    # ################
+    # ################ Simple CNN, not used
     # inputs = Input(input_size)
     # # Contracting Path
     # c1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
