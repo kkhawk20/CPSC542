@@ -63,7 +63,12 @@ def model_eval():
 
         # Load corresponding mask
         # This part depends on how your dataset is structured
+        base_name = os.path.basename(image_path)  # Get the filename from the path
+        name_without_ext = os.path.splitext(base_name)[0]  # Remove the file extension
+        mask_filename = name_without_ext + "_mask.jpg"  # Append '_mask' and re-add the file extension for mask files
+        mask_path = os.path.join(os.path.dirname(image_path).replace('Images', 'Masks'), mask_filename)  # Construct the mask path
         mask_path = image_path.replace('Images', 'Masks')  # Adjust based on your directory structure
+        
         true_mask = load_img(mask_path, target_size=(256, 256), color_mode="grayscale")
         true_mask = img_to_array(true_mask)
         true_mask = true_mask / 255.0  # Normalize mask to [0, 1] if needed
