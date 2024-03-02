@@ -8,8 +8,9 @@ import os
 
 def unet(train_gen, val_gen, test_gen):
 
-    input_size=(256,256,1)
+    input_size=(256,256,3)
     save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
+
     def scheduler(epoch, lr):
         if epoch < 10:
             return lr
@@ -90,7 +91,7 @@ def unet(train_gen, val_gen, test_gen):
                   loss = 'binary_crossentropy', 
                   metrics = ['accuracy'])
     
-    model.summary()
+    print(model.summary())
 
     history = model.fit(train_gen, validation_data = val_gen, 
                         callbacks = callbacks, epochs = 100)
