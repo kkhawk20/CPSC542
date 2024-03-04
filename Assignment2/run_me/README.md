@@ -18,5 +18,5 @@ Resources + ones I used to learn about things:
 
 ChatGPT Prompt Uses:
 
-* We need a mask for per-pixel labels...
+* I need to take this directory of images that was separated for image classification. Can you help me reorganize this so I can have images and masks for the three directories of train, test, and validation? 
 * 
