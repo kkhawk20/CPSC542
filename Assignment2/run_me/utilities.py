@@ -5,22 +5,24 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from keras.models import load_model
 import keras.backend as K
 import warnings
+import tensorflow as tf
 warnings.filterwarnings('ignore')
 
 def calculate_iou(y_true, y_pred, smooth=1e-6):
-    print(f"y_true shape: {y_true.shape}, y_pred shape: {y_pred.shape}")
-    y_true = K.cast(y_true, 'float32')
-    y_pred = K.cast(y_pred, 'float32')
-    intersection = K.sum(K.abs(y_true * y_pred), axis=[0,1,2])
-    union = K.sum(y_true, axis=[0,1,2]) + K.sum(y_pred, axis=[0,1,2]) - intersection
-    iou = (intersection + smooth) / (union + smooth)  # Removed K.mean and axis=0
-    return iou
+    y_true = tf.cast(y_true, 'float32')
+    y_pred = tf.cast(y_pred, 'float32')
+    intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=[1, 2])
+    union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2]) - intersection
+    iou = (intersection + smooth) / (union + smooth)
+    return tf.reduce_mean(iou)
 
 def dice_coefficient(y_true, y_pred, smooth=1e-6):
-    intersection = K.sum(y_true * y_pred, axis=[1, 2, 3])
-    union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3])
-    dice = K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
-    return dice
+    y_true = tf.cast(y_true, 'float32')
+    y_pred = tf.cast(y_pred, 'float32')
+    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2])
+    union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2])
+    dice = (2. * intersection + smooth) / (union + smooth)
+    return tf.reduce_mean(dice)
 
 def overlay_segmentation(image_path, model, save_dir):
     original_image = load_img(image_path, target_size=(256, 256))
@@ -106,9 +108,9 @@ def model_eval(history, model):
         true_mask = true_mask / 255.0
 
         predictions = model.predict(input_image)
-        predicted_mask = (predictions > 0.5).astype(np.float32)
-        predicted_mask = np.squeeze(predicted_mask, axis=0)  # Remove batch dimension
-        predicted_mask = np.expand_dims(predicted_mask, axis=-1)
+        predicted_mask = tf.argmax(predictions, axis=-1)
+        predicted_mask = tf.squeeze(predicted_mask)  # This should already give you a shape of (256, 256)
+
 
         iou = calculate_iou(true_mask, predicted_mask)
         dice = dice_coefficient(true_mask, predicted_mask)
