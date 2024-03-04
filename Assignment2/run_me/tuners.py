@@ -25,6 +25,7 @@ def unet(train_gen, val_gen, test_gen):
         LearningRateScheduler(scheduler, verbose = 1)
     ]
 
+    # MODEL! U-NET
     inputs = Input(input_size)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
