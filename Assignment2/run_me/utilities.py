@@ -9,11 +9,17 @@ import tensorflow as tf
 warnings.filterwarnings('ignore')
 
 def calculate_iou(y_true, y_pred, smooth=1e-6):
+    print("y_true shape:", y_true.shape)
+    print("y_pred shape:", y_pred.shape)
     y_true = tf.cast(y_true, 'float32')
     y_pred = tf.cast(y_pred, 'float32')
+
     intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=[1, 2])
+    print("Intersection shape:", intersection.shape)
+
     union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2]) - intersection
-    iou = (intersection + smooth) / (union + smooth)
+    print("Union calculation passed")    iou = (intersection + smooth) / (union + smooth)
+    
     return tf.reduce_mean(iou)
 
 def dice_coefficient(y_true, y_pred, smooth=1e-6):
