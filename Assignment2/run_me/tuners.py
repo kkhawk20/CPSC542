@@ -5,11 +5,13 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, E
 import keras
 import numpy as np
 import os
+import time
 
 def unet(train_gen, val_gen, test_gen):
 
     input_size=(256,256,3)
     save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
+    model_checkpoint_path = os.path.join(save_dir, 'unet_KH.h5')
 
     def scheduler(epoch, lr):
         if epoch < 10:
@@ -93,15 +95,27 @@ def unet(train_gen, val_gen, test_gen):
                   loss = 'binary_crossentropy', 
                   metrics = ['accuracy'])
 
+    # Tracking training time for LOLs
+    start_time = time.time()
+
     history = model.fit(train_gen, validation_data = val_gen, 
                         callbacks = callbacks, epochs = 500)
 
-      # Load the best model
+    end_time = time.time()
+
+    # Calculate and print the training duration
+    training_duration = end_time - start_time
+    hours, rem = divmod(training_duration, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
+
+    # Load the best model
     best_model = load_model(model_checkpoint_path)
 
     # Save best model's summary to file
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
     with open(output_file_path, 'w') as f:
         best_model.summary(print_fn=lambda x: f.write(x + '\n'))
+        f.write(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
 
     return best_model, history
