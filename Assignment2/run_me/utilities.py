@@ -8,6 +8,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def calculate_iou(y_true, y_pred, smooth=1e-6):
+    print(f"y_true shape: {y_true.shape}, y_pred shape: {y_pred.shape}")
+    y_true = K.cast(y_true, 'float32')
+    y_pred = K.cast(y_pred, 'float32')
     intersection = K.sum(K.abs(y_true * y_pred), axis=[1,2,3])
     union = K.sum(y_true,[1,2,3])+K.sum(y_pred,[1,2,3])-intersection
     iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
@@ -43,10 +46,38 @@ def overlay_segmentation(image_path, model, save_dir):
     plt.savefig(save_path)
     plt.close()  # Close the plot to free memory
 
-def model_eval():
+def plot_and_save_metrics(history, save_dir):
+    # Plot training & validation accuracy values
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
     
+    # Plot training & validation loss values
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    
+    # Save the figure
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, 'model_metrics.jpg'))
+    plt.close()  # Close the plot after saving to free up memory
+
+
+def model_eval(history, model):
+    
+    # This block of code is going to load in the trained model, and overlay
+    # The predicted image segmentation
     test_images_dir = os.path.join(os.path.dirname(__file__), 'Data_new/Test/Images')
-    model = load_model(os.path.join(os.path.dirname(__file__), 'outputs/unet_KH.h5'))
+    #model = load_model(os.path.join(os.path.dirname(__file__), 'outputs/unet_KH.h5'))
     save_dir = os.path.join(os.path.dirname(__file__), 'outputs')  # Specify where to save overlay images
     os.makedirs(save_dir, exist_ok=True)  # Create save directory if it doesn't exist
 
@@ -59,19 +90,20 @@ def model_eval():
     for image_path in image_paths:
         original_image = load_img(image_path, target_size=(256, 256))
         numpy_image = img_to_array(original_image)
-        input_image = np.expand_dims(numpy_image, axis=0) / 255.0  # Normalize if your model expects this
+        input_image = np.expand_dims(numpy_image, axis=0) / 255.0
 
-        # Load corresponding mask
-        # This part depends on how your dataset is structured
-        base_name = os.path.basename(image_path)  # Get the filename from the path
-        name_without_ext = os.path.splitext(base_name)[0]  # Remove the file extension
-        mask_filename = name_without_ext + "_mask.jpg"  # Append '_mask' and re-add the file extension for mask files
-        mask_path = os.path.join(os.path.dirname(image_path).replace('Images', 'Masks'), mask_filename)  # Construct the mask path
-        mask_path = image_path.replace('Images', 'Masks')  # Adjust based on your directory structure
-        
+        base_name = os.path.basename(image_path)
+        name_without_ext = os.path.splitext(base_name)[0]
+        mask_filename = name_without_ext + "_mask.jpg"  # Ensure this matches your mask file extensions
+        mask_path = os.path.join(os.path.dirname(image_path).replace('Images', 'Masks'), mask_filename)
+
+        if not os.path.exists(mask_path):
+            print(f"Mask file does not exist: {mask_path}")
+            continue  # Skip this image-mask pair and move to the next
+
         true_mask = load_img(mask_path, target_size=(256, 256), color_mode="grayscale")
         true_mask = img_to_array(true_mask)
-        true_mask = true_mask / 255.0  # Normalize mask to [0, 1] if needed
+        true_mask = true_mask / 255.0
 
         predictions = model.predict(input_image)
         predicted_mask = np.argmax(predictions, axis=-1)
@@ -82,8 +114,11 @@ def model_eval():
         ious.append(iou)
         dices.append(dice)
 
-        # Optionally, visualize the first few images
-        if len(ious) <= 5:  # Adjust the number of images to visualize
+        # Visualize the first few images
+        if len(ious) <= 5:  # number of images to visualize
             overlay_segmentation(image_path, model, save_dir)
     
     print(f"Average IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
+
+    # This is going to save a graph that will show val&test acc&loss
+    plot_and_save_metrics(history, save_dir)
