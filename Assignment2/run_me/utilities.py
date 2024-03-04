@@ -13,7 +13,9 @@ def calculate_iou(y_true, y_pred, smooth=1e-6):
     print("y_pred shape:", y_pred.shape)
     y_true = tf.cast(y_true, 'float32')
     y_pred = tf.cast(y_pred, 'float32')
-
+    
+    # Expand the dimensions of y_pred to match y_true
+    y_pred = tf.expand_dims(y_pred, -1)
     intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=[1, 2])
     print("Intersection shape:", intersection.shape)
 
