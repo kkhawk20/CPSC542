@@ -11,9 +11,9 @@ def calculate_iou(y_true, y_pred, smooth=1e-6):
     print(f"y_true shape: {y_true.shape}, y_pred shape: {y_pred.shape}")
     y_true = K.cast(y_true, 'float32')
     y_pred = K.cast(y_pred, 'float32')
-    intersection = K.sum(K.abs(y_true * y_pred), axis=[1,2,3])
-    union = K.sum(y_true,[1,2,3])+K.sum(y_pred,[1,2,3])-intersection
-    iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
+    intersection = K.sum(K.abs(y_true * y_pred), axis=[0,1,2])
+    union = K.sum(y_true, axis=[0,1,2]) + K.sum(y_pred, axis=[0,1,2]) - intersection
+    iou = (intersection + smooth) / (union + smooth)  # Removed K.mean and axis=0
     return iou
 
 def dice_coefficient(y_true, y_pred, smooth=1e-6):
@@ -106,8 +106,9 @@ def model_eval(history, model):
         true_mask = true_mask / 255.0
 
         predictions = model.predict(input_image)
-        predicted_mask = np.argmax(predictions, axis=-1)
-        predicted_mask = np.squeeze(predicted_mask, axis=0)
+        predicted_mask = (predictions > 0.5).astype(np.float32)
+        predicted_mask = np.squeeze(predicted_mask, axis=0)  # Remove batch dimension
+        predicted_mask = np.expand_dims(predicted_mask, axis=-1)
 
         iou = calculate_iou(true_mask, predicted_mask)
         dice = dice_coefficient(true_mask, predicted_mask)
