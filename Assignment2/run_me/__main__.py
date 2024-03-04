@@ -1,5 +1,6 @@
 # This will run my code!
-# in terminal, type in: python3 -m Fruit_class_modular
+# in terminal, type in: python3 -m run_me
+
 
 from . import *
 import tensorflow as tf
@@ -16,7 +17,6 @@ def main():
     model_eval(history, model)
 
 if __name__ == '__main__':
-
 
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
