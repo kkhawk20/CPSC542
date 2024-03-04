@@ -18,7 +18,8 @@ def calculate_iou(y_true, y_pred, smooth=1e-6):
     print("Intersection shape:", intersection.shape)
 
     union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2]) - intersection
-    print("Union calculation passed")    iou = (intersection + smooth) / (union + smooth)
+    print("Union calculation passed")    
+    iou = (intersection + smooth) / (union + smooth)
     
     return tf.reduce_mean(iou)
 
