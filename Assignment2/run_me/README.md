@@ -14,6 +14,8 @@ Resources + ones I used to learn about things:
 * Caitlyn's Office Hours
 * https://www.geeksforgeeks.org/u-net-architecture-explained/
 * https://github.com/zhixuhao/unet/blob/master/model.py
+* https://pyimagesearch.com/2022/02/21/u-net-image-segmentation-in-keras/
+* https://keras.io/api/applications/vgg/
 * 
 
 ChatGPT Prompt Uses:
