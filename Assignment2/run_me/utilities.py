@@ -6,6 +6,7 @@ from keras.models import load_model
 import keras.backend as K
 import warnings
 import tensorflow as tf
+from matplotlib.colors import ListedColormap
 warnings.filterwarnings('ignore')
 
 def calculate_iou(y_true, y_pred, smooth=1e-6):
@@ -28,12 +29,17 @@ def calculate_iou(y_true, y_pred, smooth=1e-6):
 def dice_coefficient(y_true, y_pred, smooth=1e-6):
     y_true = tf.cast(y_true, 'float32')
     y_pred = tf.cast(y_pred, 'float32')
+    # Ensure y_pred has the same dimensions as y_true
+    y_pred = tf.expand_dims(y_pred, -1)
     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2])
     union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2])
     dice = (2. * intersection + smooth) / (union + smooth)
     return tf.reduce_mean(dice)
 
+
 def overlay_segmentation(image_path, model, save_dir):
+    custom_cmap = ListedColormap(['blue', 'red'])
+
     original_image = load_img(image_path, target_size=(256, 256))
     numpy_image = img_to_array(original_image)
     input_image = np.expand_dims(numpy_image, axis=0)
@@ -49,7 +55,8 @@ def overlay_segmentation(image_path, model, save_dir):
     plt.subplot(1, 2, 2)
     plt.title("Segmentation")
     plt.imshow(original_image)
-    plt.imshow(predicted_mask, alpha=0.5, cmap='jet')  # Adjust transparency with alpha
+    # Use the custom colormap for the segmentation mask
+    plt.imshow(predicted_mask, alpha=0.5, cmap=custom_cmap)  # Adjust transparency with alpha
     
     # Save the figure to the specified directory
     image_name = os.path.basename(image_path)
