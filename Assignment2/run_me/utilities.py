@@ -37,8 +37,8 @@ def dice_coefficient(y_true, y_pred, smooth=1e-6):
     return tf.reduce_mean(dice)
 
 
-def overlay_segmentation(image_path, model, save_dir):
-    custom_cmap = ListedColormap(['blue', 'red'])
+def overlay_segmentation(image_path, true_mask_path, model, save_dir):
+    custom_cmap = ListedColormap(['blue', 'green'])
 
     original_image = load_img(image_path, target_size=(256, 256))
     numpy_image = img_to_array(original_image)
@@ -47,16 +47,27 @@ def overlay_segmentation(image_path, model, save_dir):
 
     predicted_mask = np.argmax(predictions, axis=-1)
     predicted_mask = np.squeeze(predicted_mask, axis=0)
+    
+    # Load the actual mask
+    true_mask = img_to_array(load_img(true_mask_path, target_size=(256, 256), color_mode="grayscale")) / 255.0
 
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
+    plt.figure(figsize=(15, 5))
+    
+    plt.subplot(1, 3, 1)
     plt.title("Original Image")
     plt.imshow(original_image)
-    plt.subplot(1, 2, 2)
-    plt.title("Segmentation")
+    plt.axis('off')
+    
+    plt.subplot(1, 3, 2)
+    plt.title("Actual Mask")
+    plt.imshow(true_mask, cmap='gray')  # Assuming true mask is in grayscale
+    plt.axis('off')
+
+    plt.subplot(1, 3, 3)
+    plt.title("Predicted Mask")
     plt.imshow(original_image)
-    # Use the custom colormap for the segmentation mask
-    plt.imshow(predicted_mask, alpha=0.5, cmap=custom_cmap)  # Adjust transparency with alpha
+    plt.imshow(predicted_mask, alpha=0.5, cmap=custom_cmap)  # Overlay predicted mask
+    plt.axis('off')
     
     # Save the figure to the specified directory
     image_name = os.path.basename(image_path)
@@ -94,6 +105,7 @@ def model_eval(history, model):
     
     # This block of code is going to load in the trained model, and overlay
     # The predicted image segmentation
+
     test_images_dir = os.path.join(os.path.dirname(__file__), 'Data_new/Test/Images')
     #model = load_model(os.path.join(os.path.dirname(__file__), 'outputs/unet_KH.h5'))
     save_dir = os.path.join(os.path.dirname(__file__), 'outputs')  # Specify where to save overlay images
@@ -135,7 +147,7 @@ def model_eval(history, model):
 
         # Visualize the first few images
         if len(ious) <= 5:  # number of images to visualize
-            overlay_segmentation(image_path, model, save_dir)
+            overlay_segmentation(image_path, mask_path, model, save_dir)
     
     print(f"Average IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
 

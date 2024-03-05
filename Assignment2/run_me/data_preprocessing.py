@@ -42,6 +42,14 @@ class SegmentationDataGenerator(Sequence):
     def __len__(self):
         return len(self.image_paths) // self.batch_size
 
+
+    def grayscale_to_color(mask):
+        # Assuming the mask is a single-channel image with pixel values 0 or 255
+        color_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)  # create a 3-channel RGB image
+        color_mask[mask == 0] = [255, 0, 0]  # red color for class 0
+        color_mask[mask == 255] = [0, 255, 0]  # green color for class 1
+        return color_mask
+
     def __getitem__(self, idx):
         batch_image_paths = self.image_paths[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_mask_paths = self.mask_paths[idx * self.batch_size:(idx + 1) * self.batch_size]
@@ -49,9 +57,11 @@ class SegmentationDataGenerator(Sequence):
         batch_images = np.array([cv2.resize(cv2.imread(file_path), self.image_size) for file_path in batch_image_paths])
         batch_masks = np.array([cv2.resize(cv2.imread(file_path, cv2.IMREAD_GRAYSCALE), self.image_size) for file_path in batch_mask_paths])
         
-        # Normalization and expansion of dimensions might be needed depending on how your model expects the data
-        batch_images = batch_images / 255.0
-        batch_masks = np.expand_dims(batch_masks, -1) / 255.0
-        
-        return batch_images, batch_masks
+        # Convert grayscale masks to RGB
+        batch_masks_rgb = np.array([grayscale_to_color(cv2.resize(cv2.imread(file_path, cv2.IMREAD_GRAYSCALE), self.image_size)) for file_path in batch_mask_paths])
 
+        # Normalization might be needed depending on how your model expects the data
+        batch_images = batch_images / 255.0
+        batch_masks_rgb = batch_masks_rgb.astype(np.float32) / 255.0  # Make sure to cast to float32 after color conversion
+        
+        return batch_images, batch_masks_rgb
