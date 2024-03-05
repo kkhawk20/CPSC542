@@ -34,7 +34,7 @@ def load_data():
     return train_gen, val_gen, test_gen
 
 class SegmentationDataGenerator(Sequence):
-    def __init__(self, image_dir, mask_dir, batch_size, image_size):
+    def __init__(self, image_dir, mask_dir, batch_size, image_size, augment = False):
         self.image_paths = [os.path.join(image_dir, img) for img in os.listdir(image_dir)]
         self.mask_paths = [os.path.join(mask_dir, mask) for mask in os.listdir(mask_dir)]
         self.batch_size = batch_size
