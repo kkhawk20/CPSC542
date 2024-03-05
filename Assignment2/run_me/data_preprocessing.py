@@ -33,6 +33,7 @@ def load_data():
 
     return train_gen, val_gen, test_gen
 
+
 class SegmentationDataGenerator(Sequence):
     def __init__(self, image_dir, mask_dir, batch_size, image_size, augment = False):
         self.image_paths = [os.path.join(image_dir, img) for img in os.listdir(image_dir)]
@@ -41,8 +42,7 @@ class SegmentationDataGenerator(Sequence):
         self.image_size = image_size
         self.augment = augment
         if self.augment:
-            # Define data augmentation parameters
-            image_data_gen_args = dict(
+            self.image_data_gen = ImageDataGenerator(
                 rotation_range=10,
                 width_shift_range=0.1,
                 height_shift_range=0.1,
@@ -51,8 +51,7 @@ class SegmentationDataGenerator(Sequence):
                 horizontal_flip=True,
                 fill_mode='nearest'
             )
-
-            mask_data_gen_args = dict(
+            self.mask_data_gen = ImageDataGenerator(
                 rotation_range=10,
                 width_shift_range=0.1,
                 height_shift_range=0.1,
@@ -60,7 +59,7 @@ class SegmentationDataGenerator(Sequence):
                 zoom_range=0.1,
                 horizontal_flip=True,
                 fill_mode='nearest',
-                preprocessing_function=lambda x: np.where(x > 0, 1, 0)  # Assume binary mask, ensures mask only contains 0s and 1s after augmentation
+                preprocessing_function=lambda x: np.where(x > 0, 1, 0)
             )
 
     def __len__(self):

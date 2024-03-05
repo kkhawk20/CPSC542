@@ -9,7 +9,6 @@ import numpy as np
 import os
 import time
 
-
 def unet(train_gen, val_gen, test_gen):
 
     def build_model(hp):
