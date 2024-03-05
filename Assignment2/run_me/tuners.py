@@ -60,23 +60,37 @@ def unet(train_gen, val_gen, test_gen):
                   loss = 'binary_crossentropy', 
                   metrics = ['accuracy'])
 
-    def scheduler(epoch, lr):
-        if epoch < 10:
-            return lr
-        else:
-            return lr * np.exp(-0.1)
+    tuner = kt.RandomSearch(build_model,
+                            objective = 'val_accuracy', 
+                            max_trials = 10,
+                            overwrite = True, # Needed to overwrite previous saves due to issues
+                            directory = save_dir, 
+                            project_name = 'Assignment2',
+                            )
 
-    callbacks = [
-        EarlyStopping(patience = 10, verbose = 1),
-        ModelCheckpoint(filepath = os.path.join(save_dir,'unet_KH.h5'), 
-        verbose = 1, save_best_only = True),
-        LearningRateScheduler(scheduler, verbose = 1)
-    ]
+    tuner.search(train_ds, epochs = 50, 
+                validation_data = val_gen, 
+                verbose = 1)
+
     # Tracking training time for LOLs
     start_time = time.time()
 
+    # Correctly get the best model and evaluate it
+    best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
+
+    # Utilizing checkpoint for saving model and early stopping to minmize loss 
+    checkpoint = ModelCheckpoint(filepath = os.path.join(save_dir, "best_model.h5"), 
+                                monitor='val_accuracy', 
+                                verbose=1, save_best_only=True, 
+                                save_weights_only=False, mode='auto', 
+                                save_freq='epoch')
+    early = EarlyStopping(monitor='val_accuracy', patience=5, 
+                        verbose=1, mode='auto')
+
     history = model.fit(train_gen, validation_data = val_gen, 
-                        callbacks = callbacks, epochs = 500)
+                        callbacks = [checkpoint, early], 
+                        epochs = 500,
+                        verbose = 2)
 
     end_time = time.time()
 
@@ -94,5 +108,11 @@ def unet(train_gen, val_gen, test_gen):
     with open(output_file_path, 'w') as f:
         best_model.summary(print_fn=lambda x: f.write(x + '\n'))
         f.write(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
+        print_to_file(f"Tuner found the best activation function: {best_hp.get('dense_activation')}")
+        print_to_file(f"Tuner found the best learning rate: {best_hp.get('lr') * 100:.2f}")
+        print_to_file(f"Best Model Test accuracy: {hist.history['accuracy'][0] * 100:.2f}%")
+        print_to_file(f"Best Model Test val_accuracy: {hist.history['val_accuracy'][0] * 100:.2f}%")
+        print_to_file(f"Best Model Test loss: {hist.history['loss'][0] * 100:.2f}%")
+        print_to_file(f"Best Model Test val_loss: {hist.history['val_loss'][0] * 100:.2f}%")
 
     return best_model, history

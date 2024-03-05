@@ -66,7 +66,7 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     plt.subplot(1, 3, 3)
     plt.title("Predicted Mask")
     plt.imshow(original_image)
-    plt.imshow(predicted_mask, alpha=0.5, cmap=custom_cmap)  # Overlay predicted mask
+    plt.imshow(predicted_mask, alpha=0.1, cmap=custom_cmap)  # Overlay predicted mask
     plt.axis('off')
     
     # Save the figure to the specified directory
@@ -138,7 +138,6 @@ def model_eval(history, model):
         predictions = model.predict(input_image)
         predicted_mask = tf.argmax(predictions, axis=-1)
         predicted_mask = tf.squeeze(predicted_mask)  # This should already give you a shape of (256, 256)
-
 
         iou = calculate_iou(true_mask, predicted_mask)
         dice = dice_coefficient(true_mask, predicted_mask)
