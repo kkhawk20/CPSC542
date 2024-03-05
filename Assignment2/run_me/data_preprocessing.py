@@ -33,7 +33,6 @@ def load_data():
 
     return train_gen, val_gen, test_gen
 
-
 class SegmentationDataGenerator(Sequence):
     def __init__(self, image_dir, mask_dir, batch_size, image_size, augment = False):
         self.image_paths = [os.path.join(image_dir, img) for img in os.listdir(image_dir)]
@@ -58,9 +57,9 @@ class SegmentationDataGenerator(Sequence):
                 shear_range=0.1,
                 zoom_range=0.1,
                 horizontal_flip=True,
-                fill_mode='nearest',
-                preprocessing_function=lambda x: np.where(x > 0, 1, 0)
+                fill_mode='nearest'
             )
+    
 
     def __len__(self):
         return len(self.image_paths) // self.batch_size
@@ -73,23 +72,34 @@ class SegmentationDataGenerator(Sequence):
         return color_mask
 
     def __getitem__(self, idx):
+
+        def augment_masks(batch_masks, mask_data_gen):
+            # Assuming batch_masks is a batch of your grayscale masks
+            # Temporarily expand the mask to 3D to satisfy ImageDataGenerator requirements
+            batch_masks_expanded = np.expand_dims(batch_masks, axis=-1)
+            augmented_masks = np.array([mask_data_gen.random_transform(mask) for mask in batch_masks_expanded])
+            # Squeeze the masks back to 2D
+            augmented_masks_squeezed = np.squeeze(augmented_masks, axis=-1)
+            return augmented_masks_squeezed
+
         batch_image_paths = self.image_paths[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_mask_paths = self.mask_paths[idx * self.batch_size:(idx + 1) * self.batch_size]
-
+        
         batch_images = np.array([cv2.resize(cv2.imread(file_path), self.image_size) for file_path in batch_image_paths])
         batch_masks = np.array([cv2.resize(cv2.imread(file_path, cv2.IMREAD_GRAYSCALE), self.image_size) for file_path in batch_mask_paths])
 
         if self.augment:
-            # Apply data augmentation to each image and mask
+            # Augment images
             batch_images = np.array([self.image_data_gen.random_transform(img) for img in batch_images])
-            batch_masks = np.array([self.mask_data_gen.random_transform(mask) for mask in batch_masks])
+            # Augment masks - Ensure this method is defined to handle grayscale masks correctly
+            batch_masks = augment_masks(batch_masks, self.mask_data_gen)
+        
+        batch_masks = np.expand_dims(batch_masks, axis=-1)  # Ensure masks are properly shaped for the model
 
-        # Convert grayscale masks to RGB
-        batch_masks_rgb = np.array([self.grayscale_to_color(mask) for mask in batch_masks])
-
-        # Normalization might be needed depending on how your model expects the data
+        # Normalization
         batch_images = batch_images.astype(np.float32) / 255.0
-        batch_masks_rgb = batch_masks_rgb.astype(np.float32) / 255.0
+        batch_masks = batch_masks.astype(np.float32) / 255.0
 
-        return batch_images, batch_masks_rgb
+        return batch_images, batch_masks
+
 
