@@ -42,15 +42,14 @@ class SegmentationDataGenerator(Sequence):
     def __len__(self):
         return len(self.image_paths) // self.batch_size
 
-
-    def grayscale_to_color(mask):
-        # Assuming the mask is a single-channel image with pixel values 0 or 255
-        color_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)  # create a 3-channel RGB image
-        color_mask[mask == 0] = [255, 0, 0]  # red color for class 0
-        color_mask[mask == 255] = [0, 255, 0]  # green color for class 1
-        return color_mask
-
     def __getitem__(self, idx):
+
+        def grayscale_to_color(mask):
+            # Assuming the mask is a single-channel image with pixel values 0 or 255
+            color_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)  # create a 3-channel RGB image
+            color_mask[mask == 0] = [255, 0, 0]  # red color for class 0
+            color_mask[mask == 255] = [0, 255, 0]  # green color for class 1
+            return color_mask
         batch_image_paths = self.image_paths[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_mask_paths = self.mask_paths[idx * self.batch_size:(idx + 1) * self.batch_size]
         

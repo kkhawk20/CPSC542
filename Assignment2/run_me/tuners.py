@@ -2,6 +2,7 @@ from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, EarlyStopping
+from tensorflow.keras.applications.vgg16 import VGG16
 import keras
 import numpy as np
 import os
