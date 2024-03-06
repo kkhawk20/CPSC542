@@ -1,8 +1,10 @@
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, EarlyStopping
+from tensorflow.keras.losses import BinaryCrossentropy
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.applications.vgg16 import VGG16
+import tensorflow as tf
 import keras_tuner as kt
 import keras
 import numpy as np
@@ -15,19 +17,29 @@ model_checkpoint_path = os.path.join(save_dir, 'best_model.h5')
 os.makedirs(save_dir, exist_ok=True)
 start_time = 0
 
+def dice_coeff(y_true, y_pred, smooth=1e-6):
+    # Flatten
+    y_true_f = tf.reshape(y_true, [-1])
+    y_pred_f = tf.reshape(y_pred, [-1])
+    intersection = tf.reduce_sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f) + smooth)
+
+def dice_loss(y_true, y_pred):
+    return 1 - dice_coeff(y_true, y_pred)
+
+# Define a combined loss
+def bce_dice_loss(y_true, y_pred):
+    bce = BinaryCrossentropy(from_logits=True)
+    return bce(y_true, y_pred) + dice_loss(y_true, y_pred)
+
 def build_model(hp):
     input_size=(256,256,3)
-    # save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
 
     # Utilizing a pre-trained VGG16 model as the encoder part of U-NET++
     vgg16 = VGG16(include_top = False, weights = 'imagenet', 
             input_shape = input_size)
     for layer in vgg16.layers: # Freeze layers
         layer.trainable = False
-
-    layer_dict = dict([(layer.name, layer) for layer in vgg16.layers])
-
-    inputs = vgg16.input
 
     # Encoder - VGG16
     vgg_outputs = [vgg16.get_layer(name).output for name in ['block1_conv2', 'block2_conv2', 'block3_conv3', 'block4_conv3', 'block5_conv3']]
@@ -62,8 +74,8 @@ def build_model(hp):
     model = Model(inputs=vgg16.input, outputs=outputs)
 
     model.compile(optimizer = Adam(learning_rate = hp.Choice('learning_rate', values = [1e-2, 1e-3, 1e-4])), 
-                loss = 'binary_crossentropy', 
-                metrics = ['accuracy'])
+                loss = bce_dice_loss, 
+                metrics = ['accuracy', dice_coeff])
 
     return model
 
@@ -111,7 +123,6 @@ def unet(train_gen, val_gen, test_gen):
     training_duration = end_time - start_time
     hours, rem = divmod(training_duration, 3600)
     minutes, seconds = divmod(rem, 60)
-    # print(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
 
     # Save best model's summary to file
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
