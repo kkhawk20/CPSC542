@@ -10,18 +10,18 @@ from matplotlib.colors import ListedColormap
 warnings.filterwarnings('ignore')
 
 def calculate_iou(y_true, y_pred, smooth=1e-6):
-    print("y_true shape:", y_true.shape)
-    print("y_pred shape:", y_pred.shape)
+    #print("y_true shape:", y_true.shape)
+    #print("y_pred shape:", y_pred.shape)
     y_true = tf.cast(y_true, 'float32')
     y_pred = tf.cast(y_pred, 'float32')
     
     # Expand the dimensions of y_pred to match y_true
     y_pred = tf.expand_dims(y_pred, -1)
     intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=[1, 2])
-    print("Intersection shape:", intersection.shape)
+    #print("Intersection shape:", intersection.shape)
 
     union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2]) - intersection
-    print("Union calculation passed")    
+    #print("Union calculation passed")    
     iou = (intersection + smooth) / (union + smooth)
     
     return tf.reduce_mean(iou)
@@ -38,7 +38,7 @@ def dice_coefficient(y_true, y_pred, smooth=1e-6):
 
 
 def overlay_segmentation(image_path, true_mask_path, model, save_dir):
-    custom_cmap = ListedColormap(['blue', 'green'])
+    custom_cmap = ListedColormap(['black', 'white'])
 
     original_image = load_img(image_path, target_size=(256, 256))
     numpy_image = img_to_array(original_image)
@@ -66,7 +66,7 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     plt.subplot(1, 3, 3)
     plt.title("Predicted Mask")
     plt.imshow(original_image)
-    plt.imshow(predicted_mask, alpha=0.1, cmap=custom_cmap)  # Overlay predicted mask
+    plt.imshow(predicted_mask, alpha=1, cmap=custom_cmap)  # Overlay predicted mask
     plt.axis('off')
     
     # Save the figure to the specified directory
@@ -113,7 +113,6 @@ def model_eval(history, model):
 
     image_paths = [os.path.join(test_images_dir, img) for img in os.listdir(test_images_dir)]
     
-    # Assume test_images_dir contains pairs of image and mask files, or adjust accordingly
     ious = []
     dices = []
     

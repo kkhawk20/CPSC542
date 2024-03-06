@@ -18,9 +18,7 @@ start_time = 0
 def build_model(hp):
     input_size=(256,256,3)
     # save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
-     # Tracking training time for LOLs
-    start_time = time.time()
-    print("Starting time at: ", start_time)
+
     # Utilizing a pre-trained VGG16 model as the encoder part of U-NET++
     vgg16 = VGG16(include_top = False, weights = 'imagenet', 
             input_shape = input_size)
@@ -89,8 +87,8 @@ def unet(train_gen, val_gen, test_gen):
     best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
 
     # Tracking training time for LOLs
-    # start_time = time.time()
-    # print("Starting time at: ", start_time)
+    start_time = time.time()
+    print("Starting time at: ", start_time)
 
     # Utilizing checkpoint for saving model and early stopping to minmize loss 
     checkpoint = ModelCheckpoint(filepath = model_checkpoint_path, 
