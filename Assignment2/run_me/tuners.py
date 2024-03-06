@@ -124,5 +124,4 @@ def unet(train_gen, val_gen, test_gen):
         f.write(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
         print_to_file(f"Tuner found the best learning rate: {best_hp.get('lr') * 100:.2f}")
  
-
     return best_model, history
