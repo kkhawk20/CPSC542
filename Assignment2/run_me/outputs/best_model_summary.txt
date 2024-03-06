@@ -85,4 +85,4 @@ Total params: 25854657 (98.63 MB)
 Trainable params: 11139969 (42.50 MB)
 Non-trainable params: 14714688 (56.13 MB)
 __________________________________________________________________________________________________
-Training took 0 hours, 7 minutes, and 45.85 seconds
+Training took 0 hours, 5 minutes, and 58.75 seconds

@@ -13,11 +13,14 @@ save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
 model_checkpoint_path = os.path.join(save_dir, 'best_model.h5')
 # Ensure the save directory exists
 os.makedirs(save_dir, exist_ok=True)
+start_time = 0
 
 def build_model(hp):
     input_size=(256,256,3)
     # save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
-
+     # Tracking training time for LOLs
+    start_time = time.time()
+    print("Starting time at: ", start_time)
     # Utilizing a pre-trained VGG16 model as the encoder part of U-NET++
     vgg16 = VGG16(include_top = False, weights = 'imagenet', 
             input_shape = input_size)
@@ -76,7 +79,7 @@ def unet(train_gen, val_gen, test_gen):
                             project_name = 'Assignment2',
                             )
 
-    tuner.search(train_gen, epochs = 50, 
+    tuner.search(train_gen, epochs = 10, 
                 validation_data = val_gen, 
                 verbose = 1)
 
@@ -86,7 +89,8 @@ def unet(train_gen, val_gen, test_gen):
     best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
 
     # Tracking training time for LOLs
-    start_time = time.time()
+    # start_time = time.time()
+    # print("Starting time at: ", start_time)
 
     # Utilizing checkpoint for saving model and early stopping to minmize loss 
     checkpoint = ModelCheckpoint(filepath = model_checkpoint_path, 
@@ -114,13 +118,11 @@ def unet(train_gen, val_gen, test_gen):
     # Save best model's summary to file
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
     with open(output_file_path, 'w') as f:
+        def print_to_file(text):
+            print(text, file=f)
         best_model.summary(print_fn=lambda x: f.write(x + '\n'))
         f.write(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
-        print_to_file(f"Tuner found the best activation function: {best_hp.get('dense_activation')}")
         print_to_file(f"Tuner found the best learning rate: {best_hp.get('lr') * 100:.2f}")
-        print_to_file(f"Best Model Test accuracy: {hist.history['accuracy'][0] * 100:.2f}%")
-        print_to_file(f"Best Model Test val_accuracy: {hist.history['val_accuracy'][0] * 100:.2f}%")
-        print_to_file(f"Best Model Test loss: {hist.history['loss'][0] * 100:.2f}%")
-        print_to_file(f"Best Model Test val_loss: {hist.history['val_loss'][0] * 100:.2f}%")
+ 
 
     return best_model, history
