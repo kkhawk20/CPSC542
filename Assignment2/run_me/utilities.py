@@ -147,7 +147,11 @@ def model_eval(history, model):
         if len(ious) <= 5:  # number of images to visualize
             overlay_segmentation(image_path, mask_path, model, save_dir)
     
-    print(f"Average IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
+    output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
+    with open(output_file_path, 'w') as f:
+        def print_to_file(text):
+            print(text, file=f)
+        print_to_file(f"\nAverage IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
 
     # This is going to save a graph that will show val&test acc&loss
     plot_and_save_metrics(history, save_dir)
