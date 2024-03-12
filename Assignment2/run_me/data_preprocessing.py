@@ -23,11 +23,11 @@ def load_data():
     test_mask_dir = os.path.join(data_dir, 'Test', 'Masks')
 
     # Pre-setting the known image size and set batch size
-    image_size = (256, 256)
+    image_size = (255, 255)
     batch_size = 32
 
     # Create instances of the SegmentationDataGenerator for each dataset
-    train_gen = SegmentationDataGenerator(train_image_dir, train_mask_dir, batch_size, image_size)
+    train_gen = SegmentationDataGenerator(train_image_dir, train_mask_dir, batch_size, image_size, augment = True)
     val_gen = SegmentationDataGenerator(val_image_dir, val_mask_dir, batch_size, image_size)
     test_gen = SegmentationDataGenerator(test_image_dir, test_mask_dir, batch_size, image_size)
 
@@ -48,6 +48,7 @@ class SegmentationDataGenerator(Sequence):
                 shear_range=0.1,
                 zoom_range=0.1,
                 horizontal_flip=True,
+                vertical_flip = True,
                 fill_mode='nearest'
             )
             self.mask_data_gen = ImageDataGenerator(
@@ -57,10 +58,10 @@ class SegmentationDataGenerator(Sequence):
                 shear_range=0.1,
                 zoom_range=0.1,
                 horizontal_flip=True,
+                vertical_flip = True,
                 fill_mode='nearest'
             )
     
-
     def __len__(self):
         return len(self.image_paths) // self.batch_size
 
@@ -94,11 +95,16 @@ class SegmentationDataGenerator(Sequence):
             # Augment masks - Ensure this method is defined to handle grayscale masks correctly
             batch_masks = augment_masks(batch_masks, self.mask_data_gen)
         
+        batch_masks = (batch_masks > 127).astype(np.float32)
         batch_masks = np.expand_dims(batch_masks, axis=-1)  # Ensure masks are properly shaped for the model
 
         # Normalization
+        # batch_images = batch_images.astype(np.float32) / 255.0
+        # batch_masks = batch_masks.astype(np.float32) / 255.0
+
         batch_images = batch_images.astype(np.float32) / 255.0
-        batch_masks = batch_masks.astype(np.float32) / 255.0
+        batch_images -= [123.68/255.0, 116.779/255.0, 103.939/255.0]  # mean centering for VGG16
+
 
         return batch_images, batch_masks
 

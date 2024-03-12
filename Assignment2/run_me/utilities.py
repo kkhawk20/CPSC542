@@ -41,18 +41,17 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     custom_cmap = ListedColormap(['black', 'white'])
 
     original_image = load_img(image_path, target_size=(256, 256))
-    numpy_image = img_to_array(original_image)
-    input_image = np.expand_dims(numpy_image, axis=0)
-    predictions = model.predict(input_image)
+    numpy_image = img_to_array(original_image) / 255.0
+    predictions = model.predict(np.expand_dims(numpy_image, axis=0))
+    predicted_mask = predictions.squeeze() 
 
-    predicted_mask = np.argmax(predictions, axis=-1)
-    predicted_mask = np.squeeze(predicted_mask, axis=0)
+    predicted_mask_binary = (predicted_mask > 0.5).astype(np.float32)
     
     # Load the actual mask
     true_mask = img_to_array(load_img(true_mask_path, target_size=(256, 256), color_mode="grayscale")) / 255.0
 
     plt.figure(figsize=(15, 5))
-    
+
     plt.subplot(1, 3, 1)
     plt.title("Original Image")
     plt.imshow(original_image)
@@ -62,7 +61,7 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     plt.title("Actual Mask")
     plt.imshow(true_mask, cmap='gray')  # Assuming true mask is in grayscale
     plt.axis('off')
-
+    
     plt.subplot(1, 3, 3)
     plt.title("Predicted Mask")
     plt.imshow(original_image)

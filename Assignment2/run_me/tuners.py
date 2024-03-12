@@ -28,7 +28,7 @@ def dice_loss(y_true, y_pred):
 
 # Define a combined loss
 def bce_dice_loss(y_true, y_pred):
-    bce = BinaryCrossentropy(from_logits=True)
+    bce = BinaryCrossentropy(from_logits=False)
     return bce(y_true, y_pred) + dice_loss(y_true, y_pred)
 
 def build_model(hp):
@@ -73,7 +73,7 @@ def build_model(hp):
     model = Model(inputs=vgg16.input, outputs=outputs)
 
     lr = hp.Choice('learning_rate', values = [1e-2, 1e-3, 1e-4])
-    model.compile(optimizer = Adam(), 
+    model.compile(optimizer = Adam(learning_rate = lr), 
                 loss = bce_dice_loss, 
                 metrics = ['accuracy', dice_coeff])
 
@@ -105,7 +105,7 @@ def unet(train_gen, val_gen, test_gen):
                                 save_weights_only=False, mode='auto', 
                                 save_freq='epoch')
 
-    early = EarlyStopping(monitor='val_accuracy', patience=5, 
+    early = EarlyStopping(monitor='val_accuracy', patience = 20, 
                         verbose=1, mode='auto')
 
     history = best_model.fit(train_gen, validation_data = val_gen, 
@@ -121,6 +121,6 @@ def unet(train_gen, val_gen, test_gen):
         def print_to_file(text):
             print(text, file=f)
         best_model.summary(print_fn=lambda x: f.write(x + '\n'))
-        print_to_file(f"\nTuner found the best learning rate: {best_hp.get('learning_rate') * 100:.2f}")
+        print_to_file(f"\nTuner found the best learning rate: {best_hp.get('learning_rate'):.2f}")
  
     return best_model, history
