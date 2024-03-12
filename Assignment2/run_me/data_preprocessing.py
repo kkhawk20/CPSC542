@@ -27,7 +27,7 @@ def load_data():
     batch_size = 32
 
     # Create instances of the SegmentationDataGenerator for each dataset
-    train_gen = SegmentationDataGenerator(train_image_dir, train_mask_dir, batch_size, image_size, augment = True)
+    train_gen = SegmentationDataGenerator(train_image_dir, train_mask_dir, batch_size, image_size)
     val_gen = SegmentationDataGenerator(val_image_dir, val_mask_dir, batch_size, image_size)
     test_gen = SegmentationDataGenerator(test_image_dir, test_mask_dir, batch_size, image_size)
 

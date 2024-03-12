@@ -143,12 +143,12 @@ def model_eval(history, model):
         ious.append(iou)
         dices.append(dice)
 
+        count = 0
         # Visualize the first few images
-        if len(ious) <= 5:  # number of images to visualize
-            overlay_segmentation(image_path, mask_path, model, save_dir)
-    
+        overlay_segmentation(image_path, mask_path, model, save_dir)
+
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
-    with open(output_file_path, 'w') as f:
+    with open(output_file_path, 'a') as f:
         def print_to_file(text):
             print(text, file=f)
         print_to_file(f"\nAverage IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
