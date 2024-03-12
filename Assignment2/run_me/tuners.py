@@ -78,6 +78,7 @@ def build_model(hp):
                 loss = bce_dice_loss, 
                 metrics = ['accuracy', dice_coeff])
     
+    # Testing out different optimizers...
     # model.compile(optimizer = RMSprop(learning_rate = lr), 
     #             loss = bce_dice_loss, 
     #             metrics = ['accuracy', dice_coeff])

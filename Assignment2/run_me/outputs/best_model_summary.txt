@@ -86,6 +86,4 @@ Trainable params: 11139969 (42.50 MB)
 Non-trainable params: 14714688 (56.13 MB)
 __________________________________________________________________________________________________
 
-Tuner found the best learning rate: 0.00
-
-Average IoU: 0.18527531623840332, Average Dice: 0.18527531623840332
+Tuner found the best learning rate: 0.01
