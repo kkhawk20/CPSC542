@@ -36,7 +36,6 @@ def dice_coefficient(y_true, y_pred, smooth=1e-6):
     dice = (2. * intersection + smooth) / (union + smooth)
     return tf.reduce_mean(dice)
 
-
 def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     custom_cmap = ListedColormap(['black', 'white'])
 
@@ -61,7 +60,7 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     plt.title("Actual Mask")
     plt.imshow(true_mask, cmap='gray')  # Assuming true mask is in grayscale
     plt.axis('off')
-    
+
     plt.subplot(1, 3, 3)
     plt.title("Predicted Mask")
     plt.imshow(original_image)

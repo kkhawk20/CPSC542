@@ -23,7 +23,7 @@ def load_data():
     test_mask_dir = os.path.join(data_dir, 'Test', 'Masks')
 
     # Pre-setting the known image size and set batch size
-    image_size = (255, 255)
+    image_size = (256, 256)
     batch_size = 32
 
     # Create instances of the SegmentationDataGenerator for each dataset
@@ -65,12 +65,12 @@ class SegmentationDataGenerator(Sequence):
     def __len__(self):
         return len(self.image_paths) // self.batch_size
 
-    def grayscale_to_color(self, mask):
-        # Assuming the mask is a single-channel image with pixel values 0 or 255
-        color_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)  # create a 3-channel RGB image
-        color_mask[mask == 0] = [255, 0, 0]  # red color for class 0
-        color_mask[mask == 255] = [0, 255, 0]  # green color for class 1
-        return color_mask
+    # def grayscale_to_color(self, mask):
+    #     # Assuming the mask is a single-channel image with pixel values 0 or 255
+    #     color_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)  # create a 3-channel RGB image
+    #     color_mask[mask == 0] = [255, 0, 0]  # red color for class 0
+    #     color_mask[mask == 255] = [0, 255, 0]  # green color for class 1
+    #     return color_mask
 
     def __getitem__(self, idx):
 
@@ -99,11 +99,11 @@ class SegmentationDataGenerator(Sequence):
         batch_masks = np.expand_dims(batch_masks, axis=-1)  # Ensure masks are properly shaped for the model
 
         # Normalization
-        # batch_images = batch_images.astype(np.float32) / 255.0
-        # batch_masks = batch_masks.astype(np.float32) / 255.0
-
         batch_images = batch_images.astype(np.float32) / 255.0
-        batch_images -= [123.68/255.0, 116.779/255.0, 103.939/255.0]  # mean centering for VGG16
+        batch_masks = batch_masks.astype(np.float32) / 255.0
+
+        # batch_images = batch_images.astype(np.float32) / 255.0
+        # batch_images -= [123.68/255.0, 116.779/255.0, 103.939/255.0]  # mean centering for VGG16
 
 
         return batch_images, batch_masks
