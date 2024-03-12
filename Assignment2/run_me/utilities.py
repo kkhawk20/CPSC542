@@ -141,9 +141,9 @@ def model_eval(history, model):
         ious.append(iou)
         dices.append(dice)
 
-        count = 0
-        # Visualize the first few images
-        overlay_segmentation(image_path, mask_path, model, save_dir)
+        
+    # Visualize the first few images
+    overlay_segmentation(image_path[0], mask_path[0], model, save_dir)
 
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
     with open(output_file_path, 'a') as f:
