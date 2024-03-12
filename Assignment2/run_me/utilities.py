@@ -98,7 +98,6 @@ def plot_and_save_metrics(history, save_dir):
     plt.savefig(os.path.join(save_dir, 'model_metrics.jpg'))
     plt.close()  # Close the plot after saving to free up memory
 
-
 def model_eval(history, model):
     
     # This block of code is going to load in the trained model, and overlay

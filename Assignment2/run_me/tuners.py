@@ -74,15 +74,17 @@ def build_model(hp):
     model = Model(inputs=vgg16.input, outputs=outputs)
 
     lr = hp.Choice('learning_rate', values = [1e-2, 1e-3, 1e-4, 1e-5])
-    model.compile(optimizer = Adam(learning_rate = lr), 
-                loss = bce_dice_loss, 
-                metrics = ['accuracy', dice_coeff])
-    
-    # Testing out different optimizers...
-    # model.compile(optimizer = RMSprop(learning_rate = lr), 
+
+    # model.compile(optimizer = Adam(learning_rate = lr), 
     #             loss = bce_dice_loss, 
     #             metrics = ['accuracy', dice_coeff])
-
+    # Tuner found the best learning rate: 0.01
+    # Average IoU: 0.18527531623840332, Average Dice: 0.18527531623840332     
+    
+    # Testing out different optimizers...
+    model.compile(optimizer = RMSprop(learning_rate = lr), 
+                loss = bce_dice_loss, 
+                metrics = ['accuracy', dice_coeff])
 
     return model
 
