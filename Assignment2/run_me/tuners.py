@@ -15,7 +15,6 @@ save_dir = os.path.join(os.path.dirname(__file__), 'outputs')
 model_checkpoint_path = os.path.join(save_dir, 'best_model.h5')
 # Ensure the save directory exists
 os.makedirs(save_dir, exist_ok=True)
-start_time = 0
 
 def dice_coeff(y_true, y_pred, smooth=1e-6):
     # Flatten
@@ -99,10 +98,6 @@ def unet(train_gen, val_gen, test_gen):
     
     best_model = tuner.get_best_models(num_models = 1)[0]  # Select the first model from the list of best models
 
-    # Tracking training time for LOLs
-    start_time = time.time()
-    print("Starting time at: ", start_time)
-
     # Utilizing checkpoint for saving model and early stopping to minmize loss 
     checkpoint = ModelCheckpoint(filepath = model_checkpoint_path, 
                                 monitor='val_accuracy', 
@@ -120,18 +115,12 @@ def unet(train_gen, val_gen, test_gen):
 
     end_time = time.time()
 
-    # Calculate and print the training duration
-    training_duration = end_time - start_time
-    hours, rem = divmod(training_duration, 3600)
-    minutes, seconds = divmod(rem, 60)
-
     # Save best model's summary to file
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
     with open(output_file_path, 'w') as f:
         def print_to_file(text):
             print(text, file=f)
         best_model.summary(print_fn=lambda x: f.write(x + '\n'))
-        f.write(f"Training took {int(hours)} hours, {int(minutes)} minutes, and {seconds:.2f} seconds")
         print_to_file(f"\nTuner found the best learning rate: {best_hp.get('learning_rate') * 100:.2f}")
  
     return best_model, history
