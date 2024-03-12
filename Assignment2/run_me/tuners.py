@@ -1,6 +1,6 @@
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.applications.vgg16 import VGG16
@@ -37,6 +37,7 @@ def build_model(hp):
     # Utilizing a pre-trained VGG16 model as the encoder part of U-NET++
     vgg16 = VGG16(include_top = False, weights = 'imagenet', 
             input_shape = input_size)
+    
     for layer in vgg16.layers: # Freeze layers
         layer.trainable = False
 
@@ -72,10 +73,15 @@ def build_model(hp):
 
     model = Model(inputs=vgg16.input, outputs=outputs)
 
-    lr = hp.Choice('learning_rate', values = [1e-2, 1e-3, 1e-4])
+    lr = hp.Choice('learning_rate', values = [1e-2, 1e-3, 1e-4, 1e-5])
     model.compile(optimizer = Adam(learning_rate = lr), 
                 loss = bce_dice_loss, 
                 metrics = ['accuracy', dice_coeff])
+    
+    # model.compile(optimizer = RMSprop(learning_rate = lr), 
+    #             loss = bce_dice_loss, 
+    #             metrics = ['accuracy', dice_coeff])
+
 
     return model
 
@@ -112,8 +118,6 @@ def unet(train_gen, val_gen, test_gen):
                         callbacks = [checkpoint, early], 
                         epochs = 500,
                         verbose = 2)
-
-    end_time = time.time()
 
     # Save best model's summary to file
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')

@@ -102,10 +102,6 @@ class SegmentationDataGenerator(Sequence):
         batch_images = batch_images.astype(np.float32) / 255.0
         batch_masks = batch_masks.astype(np.float32) / 255.0
 
-        # batch_images = batch_images.astype(np.float32) / 255.0
-        # batch_images -= [123.68/255.0, 116.779/255.0, 103.939/255.0]  # mean centering for VGG16
-
-
         return batch_images, batch_masks
 
 
