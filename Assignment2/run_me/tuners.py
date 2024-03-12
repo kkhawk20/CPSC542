@@ -4,6 +4,8 @@ from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.callbacks import ReduceLROnPlateau
+from keras_tuner import Objective
 import tensorflow as tf
 import keras_tuner as kt
 import keras
@@ -38,8 +40,11 @@ def build_model(hp):
     vgg16 = VGG16(include_top = False, weights = 'imagenet', 
             input_shape = input_size)
     
-    for layer in vgg16.layers: # Freeze layers
+    for layer in vgg16.layers[:15]: # Freeze top 15 layers (leave 4)
         layer.trainable = False
+
+    for i, layer in enumerate(vgg16.layers):
+        print(i, layer.name, layer.trainable)
 
     # Encoder - VGG16
     vgg_outputs = [vgg16.get_layer(name).output for name in ['block1_conv2', 'block2_conv2', 'block3_conv3', 'block4_conv3', 'block5_conv3']]
@@ -52,6 +57,7 @@ def build_model(hp):
     up6 = Conv2DTranspose(512, 2, strides=(2, 2), padding='same')(bottleneck)
     merge6 = concatenate([c4, up6], axis=3)
     c6 = Conv2D(512, 3, activation='relu', padding='same')(merge6)
+    c6 = Dropout(0.5)(c6) #Adding dropout to see if this helps
     c6 = Conv2D(512, 3, activation='relu', padding='same')(c6)
 
     up7 = Conv2DTranspose(256, 2, strides=(2, 2), padding='same')(c6)
@@ -72,35 +78,30 @@ def build_model(hp):
     outputs = Conv2D(1, 1, activation = 'sigmoid')(c9)
 
     model = Model(inputs=vgg16.input, outputs=outputs)
-
-    lr = hp.Choice('learning_rate', values = [1e-2, 1e-3, 1e-4, 1e-5])
-
-    # model.compile(optimizer = Adam(learning_rate = lr), 
-    #             loss = bce_dice_loss, 
-    #             metrics = ['accuracy', dice_coeff])
-    # Tuner found the best learning rate: 0.01
-    # Average IoU: 0.18527531623840332, Average Dice: 0.18527531623840332     
     
-    # Testing out different optimizers...
-    model.compile(optimizer = RMSprop(learning_rate = lr), 
-                loss = bce_dice_loss, 
-                metrics = ['accuracy', dice_coeff])
 
+    # Done with model, compile now
+    lr = hp.Choice('learning_rate', values = [1e-3, 1e-4, 1e-5])
+
+    model.compile(optimizer = Adam(learning_rate = lr), 
+                loss = bce_dice_loss, 
+                metrics = [dice_coeff])
+    
     return model
 
 def unet(train_gen, val_gen, test_gen):
 
     tuner = kt.RandomSearch(build_model,
-                            objective = 'val_accuracy', 
+                            objective = Objective('val_dice_coeff', direction = "max"), 
                             max_trials = 10,
                             overwrite = True, # Needed to overwrite previous saves due to issues
                             directory = save_dir, 
                             project_name = 'Assignment2',
                             )
 
-    tuner.search(train_gen, epochs = 10, 
+    tuner.search(train_gen, epochs = 5, 
                 validation_data = val_gen, 
-                verbose = 1)
+                verbose = 2)
 
      # Correctly get the best model/hp and evaluate it
     best_hp = tuner.get_best_hyperparameters()[0]
@@ -109,16 +110,21 @@ def unet(train_gen, val_gen, test_gen):
 
     # Utilizing checkpoint for saving model and early stopping to minmize loss 
     checkpoint = ModelCheckpoint(filepath = model_checkpoint_path, 
-                                monitor='val_accuracy', 
+                                monitor='val_dice_coeff', 
                                 verbose=1, save_best_only=True, 
-                                save_weights_only=False, mode='auto', 
+                                save_weights_only=False, mode='max', 
                                 save_freq='epoch')
 
-    early = EarlyStopping(monitor='val_accuracy', patience = 20, 
-                        verbose=1, mode='auto')
+    early = EarlyStopping(monitor='val_dice_coeff', patience = 15, 
+                        verbose=1, mode='max')
+    
+    lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.1, 
+                                     patience=10,
+                                     verbose = 1,
+                                     min_lr = 1e-6)
 
     history = best_model.fit(train_gen, validation_data = val_gen, 
-                        callbacks = [checkpoint, early], 
+                        callbacks = [checkpoint, early, lr_scheduler], 
                         epochs = 500,
                         verbose = 2)
 
@@ -128,6 +134,6 @@ def unet(train_gen, val_gen, test_gen):
         def print_to_file(text):
             print(text, file=f)
         best_model.summary(print_fn=lambda x: f.write(x + '\n'))
-        print_to_file(f"\nTuner found the best learning rate: {best_hp.get('learning_rate'):.2f}")
+        print_to_file(f"\nTuner found the best learning rate: {best_hp.get('learning_rate'):.4f}")
  
     return best_model, history
