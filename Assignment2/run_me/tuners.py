@@ -120,8 +120,8 @@ def build_model(hp):
     lr = hp.Choice('learning_rate', values = [1e-3, 1e-4, 1e-5])
 
     model.compile(optimizer = Adam(learning_rate = lr), 
-                    # loss = bce_dice_loss, # Removing this for debugging stuff
-                  loss = tf.keras.losses.BinaryCrossentropy()
+                loss = bce_dice_loss, # Removing this for debugging stuff
+                  # loss = tf.keras.losses.BinaryCrossentropy()
                     metrics = [dice_coeff])
     
     return model
