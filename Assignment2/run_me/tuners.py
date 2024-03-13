@@ -31,70 +31,45 @@ def dice_loss(y_true, y_pred):
 
 # Define a combined loss
 def bce_dice_loss(y_true, y_pred):
+    print("y_true shape:", tf.shape(y_true))
+    print("y_pred shape:", tf.shape(y_pred))
     bce = BinaryCrossentropy(from_logits=False)
+    return bce(y_true, y_pred)
     return bce(y_true, y_pred) + dice_loss(y_true, y_pred)
 
 # Testing out a different pre-trained encoder architecture
-def build_resnet(hp):
-    input_size=(256,256,3)
-    inputs = Input(input_size)
-    encoder = ResNet50(include_top = False, weights = 'imagenet',
-                       input_tensor = inputs)
+def build_unet_resnet50(input_shape=(256, 256, 3)):
+    # Load ResNet50 as the encoder with pretrained weights and without the top layer
+    base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
 
-    # for layer in encoder.layers[:15]: # Freeze top 15 layers (leave 4)
-    #     layer.trainable = False
+    # Encoder: Capture skip connections (outputs of interest) from ResNet50
+    # These layer names are specific to ResNet50 architecture
+    skip_layer_names = ['conv2_block3_out', 'conv3_block4_out', 'conv4_block6_out', 'conv5_block3_out']
+    encoder_outputs = [base_model.get_layer(name).output for name in skip_layer_names]
 
-    for layer in encoder.layers: # Freeze layers
-        layer.trainable = False
+    # Decoder: Construct the decoder layers with skip connections and upsampling
+    decoder_filters = [256, 128, 64, 32]  # Adjust the number of filters if necessary
+    x = base_model.output
+    for i, f in enumerate(decoder_filters):
+        # Upsampling (you can also experiment with Conv2DTranspose)
+        x = UpSampling2D((2, 2), interpolation='bilinear')(x)
+        # Skip connection
+        if i < len(encoder_outputs):  # Safety check
+            x = concatenate([x, encoder_outputs[-(i + 1)]])
 
-    # Encoder 
-    skip_connections = ['conv2_block3_out', 'conv3_block4_out', 'conv4_block6_out', 'conv5_block3_out']
-    encoder_outputs = [encoder.get_layer(name).output for name in skip_connections]
-    c1, c2, c3, c4 = encoder_outputs
+        # Convolutional layers
+        x = Conv2D(f, (3, 3), activation='relu', padding='same')(x)
+        x = Conv2D(f, (3, 3), activation='relu', padding='same')(x)
 
-    c4_upsampled = UpSampling2D(size=(2, 2))(c4)
-    c3_upsampled = UpSampling2D(size=(2, 2))(c3)
-    c2_upsampled = UpSampling2D(size=(2, 2))(c2)
-    c1_upsampled = UpSampling2D(size=(2, 2))(c1)
-    #print(c4_upsampled.shape)
+    # Output layer for binary segmentation
+    output = Conv2D(1, (1, 1), activation='sigmoid')(x)
 
-    # Bottleneck
-    bottleneck = c4
-    #print(bottleneck.shape)
+    # Final model
+    model = Model(inputs=base_model.input, outputs=output)
 
-    # Decoder
-    up6 = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(bottleneck)
-    #print(up6.shape)
-    merge6 = concatenate([c4_upsampled, up6], axis=3)
-    c6 = Conv2D(256, 3, activation='relu', padding='same')(merge6)
-    c6 = Conv2D(256, 3, activation='relu', padding='same')(c6)
+    model = build_unet_resnet50()
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-    up7 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c6)
-    merge7 = concatenate([c3_upsampled, up7], axis=3)
-    c7 = Conv2D(128, 3, activation='relu', padding='same')(merge7)
-    c7 = Conv2D(128, 3, activation='relu', padding='same')(c7)
-
-    up8 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c7)
-    merge8 = concatenate([c2_upsampled, up8], axis=3)
-    c8 = Conv2D(64, 3, activation='relu', padding='same')(merge8)
-    c8 = Conv2D(64, 3, activation='relu', padding='same')(c8)
-
-    up9 = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c8)
-    merge9 = concatenate([c1_upsampled, up9], axis=3)
-    c9 = Conv2D(32, 3, activation='relu', padding='same')(merge9)
-    c9 = Conv2D(32, 3, activation='relu', padding='same')(c9)
-    
-    outputs = Conv2D(1, 1, activation = 'sigmoid')(c9)
-
-    model = Model(inputs=inputs, outputs=outputs)
-    
-    # Done with model, compile now
-    lr = hp.Choice('learning_rate', values = [1e-3, 1e-4, 1e-5])
-
-    model.compile(optimizer = Adam(learning_rate = lr), 
-                loss = bce_dice_loss, 
-                metrics = [dice_coeff])
-    
     return model
 
 # This is a vgg16 model as the encoder for the u-net
@@ -158,7 +133,7 @@ def build_model(hp):
 
 def unet(train_gen, val_gen, test_gen):
 
-    tuner = kt.RandomSearch(build_resnet,
+    tuner = kt.RandomSearch(build_model,
                             objective = Objective('val_dice_coeff', direction = "max"), 
                             max_trials = 10,
                             overwrite = True, # Needed to overwrite previous saves due to issues
