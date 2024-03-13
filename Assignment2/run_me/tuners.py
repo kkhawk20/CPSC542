@@ -67,9 +67,6 @@ def build_unet_resnet50(input_shape=(256, 256, 3)):
     # Final model
     model = Model(inputs=base_model.input, outputs=output)
 
-    model = build_unet_resnet50()
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
     return model
 
 # This is a vgg16 model as the encoder for the u-net
