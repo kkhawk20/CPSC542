@@ -82,7 +82,7 @@ def build_model(hp):
     
     for layer in vgg16.layers[:15]: # Freeze top 15 layers (leave 4)
         layer.trainable = False
-        
+
     # Encoder - VGG16
     vgg_outputs = [vgg16.get_layer(name).output for name in ['block1_conv2', 'block2_conv2', 'block3_conv3', 'block4_conv3', 'block5_conv3']]
     c1, c2, c3, c4, c5 = vgg_outputs
@@ -120,8 +120,9 @@ def build_model(hp):
     lr = hp.Choice('learning_rate', values = [1e-3, 1e-4, 1e-5])
 
     model.compile(optimizer = Adam(learning_rate = lr), 
-                loss = bce_dice_loss, 
-                metrics = [dice_coeff])
+                    # loss = bce_dice_loss, # Removing this for debugging stuff
+                  loss = tf.keras.losses.BinaryCrossentropy()
+                    metrics = [dice_coeff])
     
     return model
 
