@@ -130,13 +130,13 @@ def model_eval(history, model):
         true_mask = img_to_array(true_mask)
         true_mask = true_mask / 255.0
         print("True Mask Shape :", true_mask.shape)
-        true_mask = np.squeeze(true_mask)
-        print("True Mask Shape after squeeze:", true_mask.shape)
+        # true_mask = np.squeeze(true_mask)
+        # print("True Mask Shape after squeeze:", true_mask.shape)
 
         predictions = model.predict(input_image)
         predicted_mask = tf.squeeze(predictions)  # This should already give you a shape of (256, 256)
-        predicted_mask_binary = (predicted_mask > 0.5).astype(np.float32)
-
+        predicted_mask_binary = tf.cast(predicted_mask > 0.5, dtype=tf.float32)
+        
         iou = calculate_iou(true_mask, predicted_mask_binary)
         dice = dice_coefficient(true_mask, predicted_mask_binary)
         ious.append(iou)

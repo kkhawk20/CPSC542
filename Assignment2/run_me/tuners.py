@@ -48,7 +48,7 @@ def build_unet_resnet50(input_shape=(256, 256, 3)):
     encoder_outputs = [base_model.get_layer(name).output for name in skip_layer_names]
 
     # Decoder: Construct the decoder layers with skip connections and upsampling
-    decoder_filters = [256, 128, 64, 32]  # Adjust the number of filters if necessary
+    decoder_filters = [256, 128, 64, 32]
     x = base_model.output
     for i, f in enumerate(decoder_filters):
         # Upsampling (you can also experiment with Conv2DTranspose)
@@ -82,10 +82,7 @@ def build_model(hp):
     
     for layer in vgg16.layers[:15]: # Freeze top 15 layers (leave 4)
         layer.trainable = False
-
-    # for i, layer in enumerate(vgg16.layers):
-    #     print(i, layer.name, layer.trainable)
-
+        
     # Encoder - VGG16
     vgg_outputs = [vgg16.get_layer(name).output for name in ['block1_conv2', 'block2_conv2', 'block3_conv3', 'block4_conv3', 'block5_conv3']]
     c1, c2, c3, c4, c5 = vgg_outputs
