@@ -64,7 +64,7 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     plt.subplot(1, 3, 3)
     plt.title("Predicted Mask")
     plt.imshow(original_image)
-    plt.imshow(predicted_mask, alpha=1, cmap=custom_cmap)  # Overlay predicted mask
+    plt.imshow(predicted_mask_binary, alpha=1, cmap=custom_cmap)  # Overlay predicted mask
     plt.axis('off')
     
     # Save the figure to the specified directory
@@ -104,8 +104,7 @@ def model_eval(history, model):
     # The predicted image segmentation
 
     test_images_dir = os.path.join(os.path.dirname(__file__), 'Data_new/Test/Images')
-    #model = load_model(os.path.join(os.path.dirname(__file__), 'outputs/unet_KH.h5'))
-    save_dir = os.path.join(os.path.dirname(__file__), 'outputs')  # Specify where to save overlay images
+    save_dir = os.path.join(os.path.dirname(__file__), 'outputs')  # where to save overlay images
     os.makedirs(save_dir, exist_ok=True)  # Create save directory if it doesn't exist
 
     image_paths = [os.path.join(test_images_dir, img) for img in os.listdir(test_images_dir)]
@@ -115,8 +114,8 @@ def model_eval(history, model):
     
     for image_path in image_paths:
         original_image = load_img(image_path, target_size=(256, 256))
-        numpy_image = img_to_array(original_image)
-        input_image = np.expand_dims(numpy_image, axis=0) / 255.0
+        numpy_image = img_to_array(original_image)  / 255.0
+        input_image = np.expand_dims(numpy_image, axis=0)
 
         base_name = os.path.basename(image_path)
         name_without_ext = os.path.splitext(base_name)[0]
@@ -130,24 +129,29 @@ def model_eval(history, model):
         true_mask = load_img(mask_path, target_size=(256, 256), color_mode="grayscale")
         true_mask = img_to_array(true_mask)
         true_mask = true_mask / 255.0
+        print("True Mask Shape :", true_mask.shape)
+        true_mask = np.squeeze(true_mask)
+        print("True Mask Shape after squeeze:", true_mask.shape)
 
         predictions = model.predict(input_image)
-        predicted_mask = tf.argmax(predictions, axis=-1)
-        predicted_mask = tf.squeeze(predicted_mask)  # This should already give you a shape of (256, 256)
+        predicted_mask = tf.squeeze(predictions)  # This should already give you a shape of (256, 256)
+        predicted_mask_binary = (predicted_mask > 0.5).astype(np.float32)
 
-        iou = calculate_iou(true_mask, predicted_mask)
-        dice = dice_coefficient(true_mask, predicted_mask)
+        iou = calculate_iou(true_mask, predicted_mask_binary)
+        dice = dice_coefficient(true_mask, predicted_mask_binary)
         ious.append(iou)
         dices.append(dice)
 
         if len(ious) <= 5:
             overlay_segmentation(image_path, mask_path, model, save_dir)
-            
+    
+    avg_iou = np.mean(ious)
+    avg_dice = np.mean(dices)
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
     with open(output_file_path, 'a') as f:
         def print_to_file(text):
             print(text, file=f)
-        print_to_file(f"\nAverage IoU: {np.mean(ious)}, Average Dice: {np.mean(dices)}")
+        print_to_file(f"\nAverage IoU: {avg_iou}, Average Dice: {avg_dice}")
 
     # This is going to save a graph that will show val&test acc&loss
     plot_and_save_metrics(history, save_dir)

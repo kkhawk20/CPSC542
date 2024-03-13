@@ -99,8 +99,10 @@ class SegmentationDataGenerator(Sequence):
         batch_masks = np.expand_dims(batch_masks, axis=-1)  # Ensure masks are properly shaped for the model
 
         # Normalization
-        batch_images = batch_images.astype(np.float32) / 255.0
-        batch_masks = batch_masks.astype(np.float32) / 255.0
+        batch_images = batch_images.astype(np.float32) / 255.0 # Color
+        # print(batch_images.shape)
+        batch_masks = batch_masks.astype(np.float32) # Greyscale
+        # print(batch_masks.shape)
 
         return batch_images, batch_masks
 

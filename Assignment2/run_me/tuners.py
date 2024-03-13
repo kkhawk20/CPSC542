@@ -34,7 +34,7 @@ def bce_dice_loss(y_true, y_pred):
     print("y_true shape:", tf.shape(y_true))
     print("y_pred shape:", tf.shape(y_pred))
     bce = BinaryCrossentropy(from_logits=False)
-    return bce(y_true, y_pred)
+    # return bce(y_true, y_pred)
     return bce(y_true, y_pred) + dice_loss(y_true, y_pred)
 
 # Testing out a different pre-trained encoder architecture
