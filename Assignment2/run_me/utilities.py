@@ -74,22 +74,24 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     plt.close()  # Close the plot to free memory
 
 def plot_and_save_metrics(history, save_dir):
-    # Plot training & validation loss values
-    plt.figure(figsize=(12, 4))
+    # Plot training & validation accuracy values
+    plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Loss Over Epochs')
-    plt.xlabel('Epochs')
+    plt.plot(history.history['loss'], label = 'Training Loss')
+    plt.plot(history.history['val_loss'], label = 'Validation Loss')
+    plt.title('Model Loss')
     plt.ylabel('Loss')
-    plt.legend()
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    
     # Plot training & validation loss values
-    plt.plot(history.history['dice_coeff'], label='Training Dice Coeff')
-    plt.plot(history.history['val_dice_coeff'], label='Validation Dice Coeff')
-    plt.title('Dice Coefficient Over Epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Dice Coefficient')
-    plt.legend()
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['dice_coeff'], label = 'training Dice coeff')
+    plt.plot(history.history['val_dice_coeff'], label = "Validation Dice Coeff")
+    plt.title('Model Dice Coeff')
+    plt.ylabel('Dice Coeff')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
     
     # Save the figure
     plt.tight_layout()
