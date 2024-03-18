@@ -4,7 +4,7 @@
 * Email : kehawkins@chapman.eduu
 * Student ID : 2364453
 
-# TO RUN THE CODE: python3 -m run_me
+### TO RUN THE CODE: python3 -m run_me
 
 * Link to Github repo: https://github.com/kkhawk20/CPSC542/tree/main/Assignment2
 * Link to dataset: https://www.kaggle.com/datasets/alihasnainch/fruits-dataset-for-classification
@@ -19,6 +19,7 @@ Resources + ones I used to learn about things:
 * 
 
 ChatGPT Prompt Uses:
-
 * I need to take this directory of images that was separated for image classification. Can you help me reorganize this so I can have images and masks for the three directories of train, test, and validation? 
+* What are some common models that are utilitized for image segmentation?
+* * General Debugging stuff for model & utilities *
 * 
