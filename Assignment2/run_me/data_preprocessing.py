@@ -104,8 +104,8 @@ class SegmentationDataGenerator(Sequence):
         batch_masks = batch_masks.astype(np.float32) # Greyscale
         # print(batch_masks.shape)
 
-        print(f"Batch images shape: {batch_images.shape}, dtype: {batch_images.dtype}, min: {batch_images.min()}, max: {batch_images.max()}")
-        print(f"Batch masks shape: {batch_masks.shape}, dtype: {batch_masks.dtype}, min: {batch_masks.min()}, max: {batch_masks.max()}")
+        # print(f"Batch images shape: {batch_images.shape}, dtype: {batch_images.dtype}, min: {batch_images.min()}, max: {batch_images.max()}")
+        # print(f"Batch masks shape: {batch_masks.shape}, dtype: {batch_masks.dtype}, min: {batch_masks.min()}, max: {batch_masks.max()}")
 
         return batch_images, batch_masks
 
