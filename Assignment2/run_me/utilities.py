@@ -18,14 +18,21 @@ def calculate_iou(y_true, y_pred, smooth=1e-6):
     #print("y_pred shape:", y_pred.shape)
     y_true = tf.cast(y_true, 'float32')
     y_pred = tf.cast(y_pred, 'float32')
-    
+    print("y_true shape : ", y_true.shape)
+    print("y_pred shape : ", y_pred.shape)
     # Expand the dimensions of y_pred to match y_true
-    y_pred = tf.expand_dims(y_pred, -1)
-    intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=[1, 2])
+    # y_pred = tf.expand_dims(y_pred, -1)
+    # intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=[1, 2])
+
     #print("Intersection shape:", intersection.shape)
 
-    union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2]) - intersection
-    #print("Union calculation passed")    
+    # union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2]) - intersection
+    # print("Union calculation passed")  
+
+    # Adjusting the axis parameter to work with 2D tensors
+    intersection = tf.reduce_sum(tf.abs(y_true * y_pred), axis=None)
+    union = tf.reduce_sum(y_true, axis=None) + tf.reduce_sum(y_pred, axis=None) - intersection
+  
     iou = (intersection + smooth) / (union + smooth)
     
     return tf.reduce_mean(iou)
