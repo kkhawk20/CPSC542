@@ -317,7 +317,7 @@ def model_eval(history, model):
     for i, image_path in enumerate(image_paths):
         base_name = os.path.basename(image_path)
         name_without_ext = os.path.splitext(base_name)[0]
-        true_mask_path = os.path.join(os.path.dirname(image_path).replace('Images', 'Masks'), name_without_ext + "_mask.png")
+        true_mask_path = os.path.join(os.path.dirname(image_path).replace('Images', 'Masks'), name_without_ext + "_mask.jpg")
 
         original_image = load_img(image_path, target_size=(256, 256))
         numpy_image = img_to_array(original_image) / 255.0
