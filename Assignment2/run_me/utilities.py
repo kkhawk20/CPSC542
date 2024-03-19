@@ -42,8 +42,8 @@ def dice_coefficient(y_true, y_pred, smooth=1e-6):
 
 def model_output_loss(output):
     return tf.reduce_mean(output)
-
-def make_gradcam_heatmap(image_path, save_dir, model, image, last_conv_layer_name, pred_index=None):
+ 
+def make_gradcam_heatmap(model, image, last_conv_layer_name, pred_index=None):
     # Create a Gradcam object
     gradcam = Gradcam(model, model_modifier=None, clone=True)
     
@@ -60,13 +60,7 @@ def make_gradcam_heatmap(image_path, save_dir, model, image, last_conv_layer_nam
                       penultimate_layer=-1)  # -1 automatically infers the last convolutional layer
     heatmap = normalize(heatmap)
     
-     # Save the figure to the specified directory
-    # image_name = os.path.basename(image_path)
-    # save_path = os.path.join(save_dir, f"overlay_{image_name}")
-    # plt.savefig(save_path)
-    # plt.close()  # Close the plot to free memory
-    
-    return heatmap
+    return heatmap[0]
 
 def make_occlusion_map(model, image, patch_size=15):
     # Create Saliency object
@@ -83,7 +77,7 @@ def make_occlusion_map(model, image, patch_size=15):
                              keepdims=True)
     
     occlusion_map = normalize(occlusion_map)
-    return occlusion_map
+    return occlusion_map[0]
 
 def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     custom_cmap = ListedColormap(['black', 'white'])
@@ -98,29 +92,31 @@ def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     # Load the actual mask
     true_mask = img_to_array(load_img(true_mask_path, target_size=(256, 256), color_mode="grayscale")) / 255.0
 
-    plt.figure(figsize=(15, 5))
+    # plt.figure(figsize=(15, 5))
 
-    plt.subplot(1, 3, 1)
-    plt.title("Original Image")
-    plt.imshow(original_image)
-    plt.axis('off')
+    # plt.subplot(1, 3, 1)
+    # plt.title("Original Image")
+    # plt.imshow(original_image)
+    # plt.axis('off')
     
-    plt.subplot(1, 3, 2)
-    plt.title("Actual Mask")
-    plt.imshow(true_mask, cmap='gray')  # Assuming true mask is in grayscale
-    plt.axis('off')
+    # plt.subplot(1, 3, 2)
+    # plt.title("Actual Mask")
+    # plt.imshow(true_mask, cmap='gray')  # Assuming true mask is in grayscale
+    # plt.axis('off')
 
-    plt.subplot(1, 3, 3)
-    plt.title("Predicted Mask")
-    plt.imshow(original_image)
-    plt.imshow(predicted_mask_binary, alpha=1, cmap=custom_cmap)  # Overlay predicted mask
-    plt.axis('off')
+    # plt.subplot(1, 3, 3)
+    # plt.title("Predicted Mask")
+    # plt.imshow(original_image)
+    # plt.imshow(predicted_mask_binary, alpha=1, cmap=custom_cmap)  # Overlay predicted mask
+    # plt.axis('off')
     
-    # Save the figure to the specified directory
-    image_name = os.path.basename(image_path)
-    save_path = os.path.join(save_dir, f"overlay_{image_name}")
-    plt.savefig(save_path)
-    plt.close()  # Close the plot to free memory
+    # # Save the figure to the specified directory
+    # image_name = os.path.basename(image_path)
+    # save_path = os.path.join(save_dir, f"overlay_{image_name}")
+    # plt.savefig(save_path)
+    # plt.close()  # Close the plot to free memory
+
+    return original_image, true_mask, predicted_mask_binary
 
 def plot_and_save_metrics(history, save_dir):
     # Plot training & validation accuracy values
@@ -192,49 +188,79 @@ def model_eval(history, model):
         ious.append(iou)
         dices.append(dice)
 
-        for i, image_path in enumerate(image_paths[:5]):
-            overlay_segmentation(image_path, mask_path, model, save_dir)
-            gradcam_heatmap = make_gradcam_heatmap(image_path, save_dir, model, numpy_image, last_conv_layer_name)
-            occlusion_map = make_occlusion_map(model, numpy_image)
+    for i, image_path in enumerate(image_paths):
+        # Assume we already have `true_mask_path` and `predicted_mask_binary` from the model
+        original_image, true_mask, predicted_mask_binary = overlay_segmentation(image_path, true_mask_path, predicted_mask_binary)
+        
+        # Generate Grad-CAM and occlusion maps
+        gradcam_heatmap = make_gradcam_heatmap(model, numpy_image, last_conv_layer_name)
+        occlusion_map = make_occlusion_map(model, numpy_image)
 
-            plt.figure(figsize=(20, 4))
+        # Now combine all the images horizontally
+        combined_image = np.hstack([
+            np.array(original_image),
+            np.array(true_mask, cmap='gray'),
+            np.array(predicted_mask_binary, cmap='gray'),
+            gradcam_heatmap,
+            occlusion_map
+        ])
 
-            # Original Image
-            plt.subplot(1, 5, 1)
-            plt.title("Original Image")
-            plt.imshow(original_image)
-            plt.axis('off')
+        # Convert combined image to uint8 if necessary, rescale to 0-255 if it's in float format
+        if combined_image.dtype != np.uint8:
+            combined_image = (255 * combined_image).astype(np.uint8)
+
+        # Save combined image
+        plt.figure(figsize=(20, 4))
+        plt.imshow(combined_image)
+        plt.title(f"Combined Visualizations for {os.path.basename(image_path)}")
+        plt.axis('off')
+        save_path = os.path.join(save_dir, f"combined_visualization_{i}.png")
+        plt.savefig(save_path)
+        plt.close()
+
+        # for i, image_path in enumerate(image_paths[:5]):
+        #     overlay_segmentation(image_path, mask_path, model, save_dir)
+        #     gradcam_heatmap = make_gradcam_heatmap(image_path, save_dir, model, numpy_image, last_conv_layer_name)
+        #     occlusion_map = make_occlusion_map(model, numpy_image)
+
+        #     plt.figure(figsize=(20, 4))
+
+        #     # Original Image
+        #     plt.subplot(1, 5, 1)
+        #     plt.title("Original Image")
+        #     plt.imshow(original_image)
+        #     plt.axis('off')
             
-            # True Mask
-            plt.subplot(1, 5, 2)
-            plt.title("True Mask")
-            plt.imshow(true_mask.squeeze(), cmap='gray')
-            plt.axis('off')
+        #     # True Mask
+        #     plt.subplot(1, 5, 2)
+        #     plt.title("True Mask")
+        #     plt.imshow(true_mask.squeeze(), cmap='gray')
+        #     plt.axis('off')
 
-            # Predicted Mask
-            plt.subplot(1, 5, 3)
-            plt.title("Predicted Mask")
-            plt.imshow(predicted_mask_binary, cmap='gray')
-            plt.axis('off')
+        #     # Predicted Mask
+        #     plt.subplot(1, 5, 3)
+        #     plt.title("Predicted Mask")
+        #     plt.imshow(predicted_mask_binary, cmap='gray')
+        #     plt.axis('off')
 
-            # Grad-CAM Heatmap
-            plt.subplot(1, 5, 4)
-            plt.title("Grad-CAM")
-            plt.imshow(original_image)
-            plt.imshow(gradcam_heatmap[0], cmap='jet', alpha=0.5)
-            plt.axis('off')
+        #     # Grad-CAM Heatmap
+        #     plt.subplot(1, 5, 4)
+        #     plt.title("Grad-CAM")
+        #     plt.imshow(original_image)
+        #     plt.imshow(gradcam_heatmap[0], cmap='jet', alpha=0.5)
+        #     plt.axis('off')
 
-            # Occlusion Map
-            plt.subplot(1, 5, 5)
-            plt.title("Occlusion Map")
-            plt.imshow(original_image)
-            plt.imshow(occlusion_map[0], cmap='jet', alpha=0.5)
-            plt.axis('off')
+        #     # Occlusion Map
+        #     plt.subplot(1, 5, 5)
+        #     plt.title("Occlusion Map")
+        #     plt.imshow(original_image)
+        #     plt.imshow(occlusion_map[0], cmap='jet', alpha=0.5)
+        #     plt.axis('off')
 
-            # Save the figure to the specified directory
-            plt.tight_layout()
-            plt.savefig(os.path.join(save_dir, f"visualizations_{i}.png"))
-            plt.close()
+        #     # Save the figure to the specified directory
+        #     plt.tight_layout()
+        #     plt.savefig(os.path.join(save_dir, f"visualizations_{i}.png"))
+        #     plt.close()
 
     avg_iou = np.mean(ious)
     avg_dice = np.mean(dices)
