@@ -7,6 +7,10 @@ import keras.backend as K
 import warnings
 import tensorflow as tf
 from matplotlib.colors import ListedColormap
+from tf_keras_vis.gradcam import Gradcam
+from tf_keras_vis.utils import normalize
+from tf_keras_vis.saliency import Saliency
+from tf_keras_vis.utils.model_modifiers import ReplaceToLinear
 warnings.filterwarnings('ignore')
 
 def calculate_iou(y_true, y_pred, smooth=1e-6):
@@ -35,6 +39,51 @@ def dice_coefficient(y_true, y_pred, smooth=1e-6):
     union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2])
     dice = (2. * intersection + smooth) / (union + smooth)
     return tf.reduce_mean(dice)
+
+def model_output_loss(output):
+    return tf.reduce_mean(output)
+
+def make_gradcam_heatmap(image_path, save_dir, model, image, last_conv_layer_name, pred_index=None):
+    # Create a Gradcam object
+    gradcam = Gradcam(model, model_modifier=None, clone=True)
+    
+    # If pred_index is provided, use it to create a loss function that isolates the output at the pred_index
+    if pred_index is not None:
+        loss = lambda output: output[..., pred_index]
+    else:
+        # If not provided, we assume binary segmentation and use the mean of the output
+        loss = model_output_loss
+
+    # Generate heatmap with GradCAM
+    heatmap = gradcam(loss,
+                      seed_input=image,
+                      penultimate_layer=-1)  # -1 automatically infers the last convolutional layer
+    heatmap = normalize(heatmap)
+    
+     # Save the figure to the specified directory
+    # image_name = os.path.basename(image_path)
+    # save_path = os.path.join(save_dir, f"overlay_{image_name}")
+    # plt.savefig(save_path)
+    # plt.close()  # Close the plot to free memory
+    
+    return heatmap
+
+def make_occlusion_map(model, image, patch_size=15):
+    # Create Saliency object
+    saliency = Saliency(model,
+                        model_modifier=ReplaceToLinear(),
+                        clone=False)
+    
+    # Define loss function for occlusion
+    loss = lambda output: K.mean(output)
+    
+    # Generate occlusion sensitivity map
+    occlusion_map = saliency(loss,
+                             seed_input=image,
+                             keepdims=True)
+    
+    occlusion_map = normalize(occlusion_map)
+    return occlusion_map
 
 def overlay_segmentation(image_path, true_mask_path, model, save_dir):
     custom_cmap = ListedColormap(['black', 'white'])
@@ -100,6 +149,7 @@ def plot_and_save_metrics(history, save_dir):
 
 def model_eval(history, model):
     
+    last_conv_layer_name = 'conv2d_7'
     # This block of code is going to load in the trained model, and overlay
     # The predicted image segmentation
 
@@ -142,9 +192,50 @@ def model_eval(history, model):
         ious.append(iou)
         dices.append(dice)
 
-        if len(ious) <= 5:
+        for i, image_path in enumerate(image_paths[:5]):
             overlay_segmentation(image_path, mask_path, model, save_dir)
-    
+            gradcam_heatmap = make_gradcam_heatmap(image_path, save_dir, model, numpy_image, last_conv_layer_name)
+            occlusion_map = make_occlusion_map(model, numpy_image)
+
+            plt.figure(figsize=(20, 4))
+
+            # Original Image
+            plt.subplot(1, 5, 1)
+            plt.title("Original Image")
+            plt.imshow(original_image)
+            plt.axis('off')
+            
+            # True Mask
+            plt.subplot(1, 5, 2)
+            plt.title("True Mask")
+            plt.imshow(true_mask.squeeze(), cmap='gray')
+            plt.axis('off')
+
+            # Predicted Mask
+            plt.subplot(1, 5, 3)
+            plt.title("Predicted Mask")
+            plt.imshow(predicted_mask_binary, cmap='gray')
+            plt.axis('off')
+
+            # Grad-CAM Heatmap
+            plt.subplot(1, 5, 4)
+            plt.title("Grad-CAM")
+            plt.imshow(original_image)
+            plt.imshow(gradcam_heatmap[0], cmap='jet', alpha=0.5)
+            plt.axis('off')
+
+            # Occlusion Map
+            plt.subplot(1, 5, 5)
+            plt.title("Occlusion Map")
+            plt.imshow(original_image)
+            plt.imshow(occlusion_map[0], cmap='jet', alpha=0.5)
+            plt.axis('off')
+
+            # Save the figure to the specified directory
+            plt.tight_layout()
+            plt.savefig(os.path.join(save_dir, f"visualizations_{i}.png"))
+            plt.close()
+
     avg_iou = np.mean(ious)
     avg_dice = np.mean(dices)
     output_file_path = os.path.join(save_dir, 'best_model_summary.txt')
