@@ -16,10 +16,10 @@ Resources + ones I used to learn about things:
 * https://github.com/zhixuhao/unet/blob/master/model.py
 * https://pyimagesearch.com/2022/02/21/u-net-image-segmentation-in-keras/
 * https://keras.io/api/applications/vgg/
-* 
+
 
 ChatGPT Prompt Uses:
 * I need to take this directory of images that was separated for image classification. Can you help me reorganize this so I can have images and masks for the three directories of train, test, and validation? 
 * What are some common models that are utilitized for image segmentation?
-* * General Debugging stuff for model & utilities *
-* 
+* General Debugging stuff for model & utilities *
+* Help me create a gradCAM map and saliency map utilizing the most pre-made packages and my code I currently have
