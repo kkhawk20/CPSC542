@@ -40,8 +40,15 @@ def calculate_iou(y_true, y_pred, smooth=1e-6):
 def dice_coefficient(y_true, y_pred, smooth=1e-6):
     y_true = tf.cast(y_true, 'float32')
     y_pred = tf.cast(y_pred, 'float32')
+    print("y_true shape : ", y_true.shape)
+    print("y_pred shape : ", y_pred.shape)
+
     # Ensure y_pred has the same dimensions as y_true
     y_pred = tf.expand_dims(y_pred, -1)
+    y_true = tf.expand_dims(y_true, -1)
+    print("y_true shape : ", y_true.shape)
+    print("y_pred shape : ", y_pred.shape)
+
     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2])
     union = tf.reduce_sum(y_true, axis=[1, 2]) + tf.reduce_sum(y_pred, axis=[1, 2])
     dice = (2. * intersection + smooth) / (union + smooth)
@@ -165,11 +172,13 @@ def plot_and_save_combined_images(original_image, true_mask, predicted_mask_bina
     ax[2].set_title('Predicted Mask')
     ax[2].axis('off')
 
+    gradcam_heatmap = np.squeeze(gradcam_heatmap)
     ax[3].imshow(original_image)
     ax[3].imshow(gradcam_heatmap, cmap='jet', alpha=0.5)
     ax[3].set_title('Grad-CAM')
     ax[3].axis('off')
 
+    occlusion_map = np.squeeze(occlusion_map)
     ax[4].imshow(original_image)
     ax[4].imshow(occlusion_map, cmap='jet', alpha=0.5)
     ax[4].set_title('Occlusion Map')
